@@ -81,6 +81,7 @@ button,input,textarea{font-family:inherit}
 .app-header .vues .vue-btn+.vue-btn{border-left:1px solid var(--border);}
 .app-header .vues .vue-btn.on{background:var(--accent);color:var(--bg);}
 .header-outils{display:contents;}
+.reglages{display:none;}
 .header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .header-actions label{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
 .header-actions input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;}
@@ -486,22 +487,25 @@ button,select{font-family:inherit;}
   .page-traiter{padding:14px 12px 24px;}
 }
 @container (max-width:760px){
-  /* En-tête sur deux rangées : ☰ et le titre (la cloche à droite), puis une bande qui défile de côté avec les vues
-     et les boutons. */
-  .app-header{gap:6px 8px;padding:6px 8px;}
+  /* En-tête sur deux rangées, sans défilement : ☰, le titre, la cloche et ⋮ (un menu qui porte le bouton du compte, EN
+     et le thème); puis « À traiter », 🔨 et 📋 sans leurs mots, Liens et Annuler. --reglages-w : la largeur de ⋮. */
+  .app-header{gap:6px 8px;padding:6px 8px;--reglages-w:32px;}
   .header-info{flex:1 1 0;min-width:0;}
   .app-header:has(.cloche:not([hidden])) .header-info{padding-right:72px;}
   .header-doc{font-size:15px;}
-  .header-outils{display:flex;align-items:center;gap:6px;flex:1 1 100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
-  .header-outils::-webkit-scrollbar{display:none;}
-  /* Un fondu au bord droit de la bande : d'autres boutons suivent. */
-  .header-outils::after{content:"";position:sticky;right:0;flex:0 0 28px;align-self:stretch;margin-left:-22px;background:linear-gradient(to right,transparent,var(--surface) 85%);pointer-events:none;}
-  /* « À traiter » ouvre la bande : la file de l'administrateur et son compteur restent à l'écran. */
+  .reglages{display:block;position:relative;align-self:flex-start;flex-shrink:0;}
+  #btn-reglages{width:var(--reglages-w);padding:5px 0;font-size:16px;font-weight:700;}
+  .menu-reglages{position:absolute;right:0;top:calc(100% + 6px);z-index:600;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:max-content;min-width:160px;max-width:calc(100cqw - 16px);padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.2);}
+  .menu-reglages .ident-btn{grid-column:1/-1;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:left;}
+  .header-outils{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex:1 1 100%;min-width:0;}
+  /* « À traiter » ouvre la rangée : la file de l'administrateur et son compteur. */
   .header-actions{display:contents;}
   .vues,.header-actions>*{flex-shrink:0;}
   #btn-traiter{order:-1;}
-  .cloche{position:absolute;top:6px;right:8px;}
-  .notifs{right:0;top:calc(100% + 6px);width:min(420px,calc(100cqw - 16px));}
+  #sync{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .cloche{position:absolute;top:6px;right:calc(16px + var(--reglages-w));}
+  /* Les notifications, sous la cloche, contre le bord droit de l'en-tête (au-delà de ⋮). */
+  .notifs{right:calc(-8px - var(--reglages-w));top:calc(100% + 6px);width:min(420px,calc(100cqw - 16px));}
   /* Documents : marges réduites, retraits ramenés, libellé du critère sous son code */
   .pane{padding:8px 6px 16px;}
   .sheet{padding:14px 10px 24px;}
@@ -533,6 +537,13 @@ button,select{font-family:inherit;}
   .verrou{padding:20px 18px;}
   .ligne-t{padding:8px 10px;}
 }
+/* Écran de moins de 360 px : les boutons de la rangée 2 se resserrent (🔨 et 📋 gardent 40 px); ce qui ne tient pas
+   encore passe à la ligne au lieu de sortir de l'écran. */
+@container (width<360px){
+  .header-outils{flex-wrap:wrap;gap:6px 4px;}
+  .header-outils button:not(.icon-btn),.header-outils #links-wrap{padding-left:5px;padding-right:5px;}
+  .header-outils .vue-btn{min-width:40px;}
+}
 /* Clavier ouvert dans la discussion, sur un écran bas : la bande des boutons et le titre de la discussion s'effacent le
    temps de la saisie, et la discussion se resserre sur la hauteur qui reste, la zone de saisie au-dessus du clavier. */
 @media (max-height:560px){@container (max-width:760px){
@@ -545,6 +556,7 @@ button,select{font-family:inherit;}
   .bandeau-dev{font-size:12px;}
   .app-header button,.header-actions label{min-height:40px;padding:6px 12px;font-size:13px;}
   #nav-toggle,.icon-btn,.lang-btn{min-width:40px;}
+  .app-header{--reglages-w:40px;}
   .lang-btn{font-size:12px!important;}
   .ind-header{padding-top:8px;padding-bottom:8px;}
   .header-actions input[type=checkbox]{width:20px;height:20px;}
@@ -633,6 +645,7 @@ const GABARIT=`<div class="racine">
     <div class="header-info">
       <div class="header-doc" id="header-doc"></div><div class="header-sous" id="header-sous" hidden></div>
     </div>
+    <span class="reglages" id="reglages"><button id="btn-reglages" aria-expanded="false" aria-controls="menu-reglages">⋮</button><div class="menu-reglages" id="menu-reglages" hidden></div></span>
     <div class="header-outils">
     <div class="vues" role="group"><button class="vue-btn" id="vue-prog" data-vue="prog"></button><button class="vue-btn" id="vue-ref" data-vue="ref"></button></div>
     <div class="header-actions">
@@ -707,9 +720,9 @@ const GABARIT=`<div class="racine">
 </div>`;
 
 const UI={
- fr:{retirerProbable:"Retirer la mention « probable » : le lien est gardé",ouvrirComp:"Ouvrir cette compétence",soutien:"Pour du soutien :",proposer:"Proposer",choisirElement:"— Élément —",plusTip:"Proposer un ajout",modifie:"modifié",supprimer:"Supprimer",supprimerMsg:"Supprimer mon message",modifierMsg:"Modifier mon message",mesPropsTip:"Superposer mes propositions à la version maître",mesProps:"Mes propositions",proposerRetrait:"Proposer ce retrait",proposerAjout:"Proposer cet ajout",proposeLe:"Proposée le {d}",title:'DEP 5319 — Charpenterie-menuiserie',tagline:"Outil de concordance — Référentiel d'évaluation 5319 & Programme d'études",ref:"Référentiel d'évaluation",prog:"Programme d'études",nav:'Navigation',links:'Liens',linksTip:"Afficher les liens vers l'autre document",undo:'Annuler (Ctrl+Z)',nothing:'Rien à annuler',theme:"Inverser l'affichage",comp:'Compétences',refShort:'📋 Référentiel',progShort:'🔨 Programme',vueRefTip:"Afficher ou masquer le référentiel d'évaluation",vueProgTip:"Afficher ou masquer le programme d'études",home:'⌂ Accueil',yesno:'Oui / Non',pts:'pts',noSubs:'Aucun sous-critère.',tol:'Tolérance :',seuil:'Seuil de réussite :',el:'Él.',global:'Global',situ:'Compétence traduite en situation',lang:'EN',
+ fr:{retirerProbable:"Retirer la mention « probable » : le lien est gardé",ouvrirComp:"Ouvrir cette compétence",soutien:"Pour du soutien :",proposer:"Proposer",choisirElement:"— Élément —",plusTip:"Proposer un ajout",modifie:"modifié",supprimer:"Supprimer",supprimerMsg:"Supprimer mon message",modifierMsg:"Modifier mon message",mesPropsTip:"Superposer mes propositions aux liens",mesProps:"Mes propositions",proposerRetrait:"Proposer ce retrait",proposerAjout:"Proposer cet ajout",proposeLe:"Proposée le {d}",title:'DEP 5319 — Charpenterie-menuiserie',tagline:"Outil de concordance — Référentiel d'évaluation 5319 & Programme d'études",ref:"Référentiel d'évaluation",prog:"Programme d'études",nav:'Navigation',links:'Liens',linksTip:"Afficher les liens vers l'autre document",undo:'Annuler (Ctrl+Z)',nothing:'Rien à annuler',theme:"Inverser l'affichage",comp:'Compétences',refShort:'📋 Référentiel',progShort:'🔨 Programme',vueRefTip:"Afficher ou masquer le référentiel d'évaluation",vueProgTip:"Afficher ou masquer le programme d'études",home:'⌂ Accueil',yesno:'Oui / Non',pts:'pts',noSubs:'Aucun sous-critère.',tol:'Tolérance :',seuil:'Seuil de réussite :',el:'Él.',global:'Global',situ:'Compétence traduite en situation',lang:'EN',
   typeSitu:'Situation',typeComp:'Comportement',duree:'Durée :',heures:'{n} heures',hCourt:'{n} h',
-  editMaitre:'Modifier les liens de ce critère dans la version maître',editCentre:"Proposer des changements aux liens de ce critère",editClose:"Fermer l'édition",
+  editMaitre:'Modifier les liens de ce critère',editCentre:"Proposer des changements aux liens de ce critère",editClose:"Fermer l'édition",
   
   probableCourt:'probable',
   legProbable:'probable',legAttente:"en attente d'une décision",legTrace:"proposition",
@@ -729,22 +742,22 @@ const UI={
   videDiscussion:'Aucun message pour l\'instant.',videEcarts:"Vous n'avez aucune proposition dans cette compétence.",
   composerPh:'Écrire un message… (@ pour mentionner, Ctrl+Entrée pour envoyer)',envoyer:'Envoyer',critere:'Critère :',element:'Élément :',
   eContre:'{n} a voté contre ce lien.',eCommentaire:"{n} a modifié son commentaire.",eCommentaireLien:"{n} a commenté ce lien.",cite:'« {t} »',eBloque:"Trop d'essais : réessayez dans 15 minutes.",
-  eAjout:'{n} a ajouté le lien à la version maître.',eRetrait:'{n} a retiré le lien de la version maître.',eRemis:'{n} a remis le lien dans la version maître.',eMaintenu:'{n} a maintenu le lien.',eAdopte:"{n} a adopté la proposition de {c}.",eClasse:"{n} ne retient pas la proposition de {c}.",eEcartAjout:"{n} propose d'ajouter ce lien.",
-  traiter:'À traiter',traiterTitre:'À traiter',
-  traiterS1:'Liens de la version maître à trancher',
+  eAjout:'{n} a ajouté le lien.',eRetrait:'{n} a retiré le lien.',eRemis:'{n} a remis le lien.',eMaintenu:'{n} a maintenu le lien.',eAdopte:"{n} a adopté la proposition de {c}.",eClasse:"{n} ne retient pas la proposition de {c}.",eEcartAjout:"{n} propose d'ajouter ce lien.",
+  traiter:'À traiter',traiterTitre:'À traiter',reglages:'Réglages',
+  traiterS1:'Liens contestés',
   traiterS2:"Ajouts proposés",
-  traiterVide:'Rien à traiter pour le moment.',retirePar:"proposition de retrait de {c}",ajoutePar:"ajout proposé par {c}",raisons:'Raisons :',fil:'Détail',fermer:'Fermer',encMaitre:'Version maître',encHors:'Hors de la version maître',encAttente:"en attente d'une décision des administrateurs",encVide:'Aucun geste ni commentaire sur ce lien.',classeCourt:"non retenue",
+  traiterVide:'Rien à traiter pour le moment.',retirePar:"proposition de retrait de {c}",ajoutePar:"ajout proposé par {c}",raisons:'Raisons :',fil:'Détail',fermer:'Fermer',encMaitre:'Votes :',encHors:'Lien retiré',encAjout:'Ajout proposé',encPar:'par {c}',encAttente:"en attente d'une décision des administrateurs",encVide:'Aucun geste ni commentaire sur ce lien.',classeCourt:"non retenue",
   notifications:'Notifications',toutLu:'Tout marquer comme lu',aucuneNotif:'Aucune notification.',
   nMention:'{n} a mentionné votre nom dans la discussion de {comp}.',nDecisionMaintenu:'{n} a maintenu le lien {l} ({comp}), contre lequel vous avez voté.',nDecisionRetrait:'{n} a retiré le lien {l} ({comp}), contre lequel vous avez voté.',
-  nAdopte:"{n} a adopté votre proposition : {l} ({comp}).",nClasse:"{n} n'a pas retenu votre proposition : {l} ({comp}).",nRemis:'Le lien {l} ({comp}) est de retour dans la version maître : votre vote compte de nouveau.',
+  nAdopte:"{n} a adopté votre proposition : {l} ({comp}).",nClasse:"{n} n'a pas retenu votre proposition : {l} ({comp}).",nRemis:'Le lien {l} ({comp}) est remis : votre vote compte de nouveau.',
   sIdentifier:'👤 Se connecter',deconnecter:'Se déconnecter',identTitre:'Identification',creerTitre:'Créer un compte',connecterTitre:'Se connecter',monCompte:'Mon compte',roleAdmin:'administrateur',identExpl:"Votre nom et votre centre sont visibles par les membres du groupe. Votre courriel n'est vu que par la personne responsable du projet : il sert à vous reconnaître quand vous revenez et à vous écrire au sujet du projet. Ces renseignements sont compilés dans une feuille Google à accès privé, et ils seront effacés à la fin du projet.",connecterExpl:'Entrez le nom et le courriel utilisés à la création de votre compte.',compteActif:'Compte actif :',identExplLocal:'Votre nom accompagne chaque modification et chaque message. En mode local, tout reste dans ce navigateur.',identNom:'Votre nom',identCourriel:'Votre courriel',identCentre:'Votre centre',choisirCentre:'— Choisir votre centre —',identMdp:'Mot de passe administrateur',creer:'Créer mon compte',connecter:'Se connecter',modeConnecter:"J'ai déjà un compte",modeCreer:'Créer un compte',
   eNom:'Ce courriel est déjà associé à un autre nom. Entrez le nom utilisé à la création du compte.',eInconnu:"Aucun compte n'utilise ce courriel. Vérifiez-le, ou créez un compte.",eCourriel:"Ce courriel n'est pas valide.",eCentre:'Choisissez votre centre.',eReseau:'Impossible de joindre la feuille Google. Réessayez dans un moment.',eMdpRequis:'Ce compte est un compte administrateur : entrez son mot de passe.',eMdp:'Mot de passe refusé.',
   verrouTitre:'DEP 5319 — Outil de concordance',verrouExpl:"Cet outil est réservé à la communauté de pratique. Entrez le code d'accès reçu avec votre invitation.",verrouCode:"Code d'accès",verrouOk:"Ouvrir l'outil",verrouRefuse:"Code d'accès refusé.",verrouReseau:'Impossible de joindre la feuille Google. Vérifiez votre connexion, puis réessayez.',verrouChargement:'Chargement…',reessayer:'Réessayer',
   sLocal:'Mode local',sOk:'✓ À jour',sEnvoi:'Enregistrement…',sChargement:'Chargement…',sErreur:'⚠ Non enregistré',sTitreFeuille:"Les modifications sont enregistrées dans la feuille Google partagée de l'équipe.",sTitreLocal:'Les modifications sont enregistrées dans ce navigateur seulement.',
   bReseau:'Impossible de joindre la feuille Google : la dernière modification n’a peut-être pas été enregistrée.',bCompte:'Votre compte est introuvable dans la feuille : reconnectez-vous.',bAdmin:'Mot de passe administrateur refusé : reconnectez-vous.',bCentre:"Ce geste est réservé à l'auteur de la proposition.",bRecent:"Un geste plus récent d'un autre administrateur sur ce lien empêche l'annulation."},
- en:{retirerProbable:"Remove the \"probable\" mention: the link is kept",ouvrirComp:"Open this competency",soutien:"For support:",proposer:"Propose",choisirElement:"— Element —",plusTip:"Propose an addition",modifie:"edited",supprimer:"Delete",supprimerMsg:"Delete my message",modifierMsg:"Edit my message",mesPropsTip:"Show my proposals over the master version",mesProps:"My proposals",proposerRetrait:"Propose this removal",proposerAjout:"Propose this addition",proposeLe:"Proposed {d}",title:'DVS 5819 — Carpentry',tagline:'Cross-reference tool — Specifications for Evaluation 5819 & Program of Study',ref:'Specifications for Evaluation',prog:'Program of Study',nav:'Navigation',links:'Links',linksTip:'Show links to the other document',undo:'Undo (Ctrl+Z)',nothing:'Nothing to undo',theme:'Invert display',comp:'Competencies',refShort:'📋 Specifications',progShort:'🔨 Program',vueRefTip:'Show or hide the specifications for evaluation',vueProgTip:'Show or hide the program of study',home:'⌂ Home',yesno:'Yes / No',pts:'marks',noSubs:'No sub-criteria.',tol:'Tolerance:',seuil:'Passing threshold:',el:'El.',global:'Overall',situ:'Competency translated into a situation',lang:'FR',
+ en:{retirerProbable:"Remove the \"probable\" mention: the link is kept",ouvrirComp:"Open this competency",soutien:"For support:",proposer:"Propose",choisirElement:"— Element —",plusTip:"Propose an addition",modifie:"edited",supprimer:"Delete",supprimerMsg:"Delete my message",modifierMsg:"Edit my message",mesPropsTip:"Show my proposals over the links",mesProps:"My proposals",proposerRetrait:"Propose this removal",proposerAjout:"Propose this addition",proposeLe:"Proposed {d}",title:'DVS 5819 — Carpentry',tagline:'Cross-reference tool — Specifications for Evaluation 5819 & Program of Study',ref:'Specifications for Evaluation',prog:'Program of Study',nav:'Navigation',links:'Links',linksTip:'Show links to the other document',undo:'Undo (Ctrl+Z)',nothing:'Nothing to undo',theme:'Invert display',comp:'Competencies',refShort:'📋 Specifications',progShort:'🔨 Program',vueRefTip:'Show or hide the specifications for evaluation',vueProgTip:'Show or hide the program of study',home:'⌂ Home',yesno:'Yes / No',pts:'marks',noSubs:'No sub-criteria.',tol:'Tolerance:',seuil:'Passing threshold:',el:'El.',global:'Overall',situ:'Competency translated into a situation',lang:'FR',
   typeSitu:'Situation',typeComp:'Behaviour',duree:'Duration:',heures:'{n} hours',hCourt:'{n} h',
-  editMaitre:'Edit the links of this criterion in the master version',editCentre:"Propose changes to the links of this criterion",editClose:'Close editing',
+  editMaitre:'Edit the links of this criterion',editCentre:"Propose changes to the links of this criterion",editClose:'Close editing',
   
   probableCourt:'probable',
   legProbable:'probable',legAttente:"awaiting a decision",legTrace:"proposal",
@@ -764,14 +777,14 @@ const UI={
   videDiscussion:'No messages yet.',videEcarts:"You have no proposals in this competency.",
   composerPh:'Write a message… (@ to mention, Ctrl+Enter to send)',envoyer:'Send',critere:'Criterion:',element:'Element:',
   cite:'"{t}"',eBloque:'Too many attempts: try again in 15 minutes.',eContre:'{n} voted against this link.',eCommentaire:"{n} edited their comment.",eCommentaireLien:"{n} commented on this link.",
-  eAjout:'{n} added the link to the master version.',eRetrait:'{n} removed the link from the master version.',eRemis:'{n} put the link back in the master version.',eMaintenu:'{n} kept the link.',eAdopte:"{n} adopted {c}'s proposal.",eClasse:"{n} did not retain {c}'s proposal.",eEcartAjout:"{n} proposes adding this link.",
-  traiter:'To review',traiterTitre:'To review',
-  traiterS1:'Master-version links to decide',
+  eAjout:'{n} added the link.',eRetrait:'{n} removed the link.',eRemis:'{n} put the link back.',eMaintenu:'{n} kept the link.',eAdopte:"{n} adopted {c}'s proposal.",eClasse:"{n} did not retain {c}'s proposal.",eEcartAjout:"{n} proposes adding this link.",
+  traiter:'To review',traiterTitre:'To review',reglages:'Settings',
+  traiterS1:'Contested links',
   traiterS2:"Proposed additions",
-  traiterVide:'Nothing to review for now.',retirePar:"removal proposed by {c}",ajoutePar:"addition proposed by {c}",raisons:'Reasons:',fil:'Details',fermer:'Close',encMaitre:'Master version',encHors:'Not in the master version',encAttente:'awaiting a decision by the administrators',encVide:'No changes or comments on this link.',classeCourt:"not retained",
+  traiterVide:'Nothing to review for now.',retirePar:"removal proposed by {c}",ajoutePar:"addition proposed by {c}",raisons:'Reasons:',fil:'Details',fermer:'Close',encMaitre:'Votes:',encHors:'Link removed',encAjout:'Proposed addition',encPar:'by {c}',encAttente:'awaiting a decision by the administrators',encVide:'No changes or comments on this link.',classeCourt:"not retained",
   notifications:'Notifications',toutLu:'Mark all as read',aucuneNotif:'No notifications.',
   nMention:'{n} mentioned you in the {comp} discussion.',nDecisionMaintenu:'{n} kept the link {l} ({comp}), which you voted against.',nDecisionRetrait:'{n} removed the link {l} ({comp}), which you voted against.',
-  nAdopte:"{n} adopted your proposal: {l} ({comp}).",nClasse:"{n} did not retain your proposal: {l} ({comp}).",nRemis:'The link {l} ({comp}) is back in the master version: your vote counts again.',
+  nAdopte:"{n} adopted your proposal: {l} ({comp}).",nClasse:"{n} did not retain your proposal: {l} ({comp}).",nRemis:'The link {l} ({comp}) is back: your vote counts again.',
   sIdentifier:'👤 Sign in',deconnecter:'Sign out',identTitre:'Identification',creerTitre:'Create an account',connecterTitre:'Sign in',monCompte:'My account',roleAdmin:'administrator',identExpl:'Your name and centre are visible to the members of the group. Your email is seen only by the project lead: it is used to recognize you when you come back and to write to you about the project. This information is kept in a private Google Sheet and will be deleted at the end of the project.',connecterExpl:'Enter the name and email you used to create your account.',compteActif:'Active account:',identExplLocal:'Your name is attached to each change and message. In local mode, everything stays in this browser.',identNom:'Your name',identCourriel:'Your email',identCentre:'Your centre',choisirCentre:'— Choose your centre —',identMdp:'Administrator password',creer:'Create my account',connecter:'Sign in',modeConnecter:'I already have an account',modeCreer:'Create an account',
   eNom:'This email is already linked to another name. Enter the name used when the account was created.',eInconnu:'No account uses this email. Check it, or create an account.',eCourriel:'This email is not valid.',eCentre:'Choose your centre.',eReseau:'Unable to reach the Google Sheet. Try again in a moment.',eMdpRequis:'This is an administrator account: enter its password.',eMdp:'Password refused.',
   verrouTitre:'DVS 5819 — Cross-reference tool',verrouExpl:'This tool is reserved for the community of practice. Enter the access code you received with your invitation.',verrouCode:'Access code',verrouOk:'Open the tool',verrouRefuse:'Access code refused.',verrouReseau:'Unable to reach the Google Sheet. Check your connection, then try again.',verrouChargement:'Loading…',reessayer:'Retry',
@@ -826,6 +839,7 @@ function monter(host){
   let ajoutOuvert=null,ajoutTexte='',ajoutEl='';   // le critère dont la boîte « Proposer un ajout » est ouverte
   let voteContre=null; // lien dont on écrit la raison d'un vote contre
   let notifsOuvert=false,vueActive='landing';
+  let enTel=false,reglagesOuvert=false;   // en-tête sur deux rangées (téléphone); menu ⋮ ouvert
   let voteContreTexte='',commentairesEnCours={};   // saisie en cours, gardée d'un rendu à l'autre
   const connecte=()=>enLigne?!!participant:!!nom;
   const estAdmin=()=>!enLigne||(role==='administrateur'&&!!mdp&&!!participant);
@@ -861,7 +875,8 @@ function monter(host){
     $('landing-title').textContent=U('title');$('landing-tag').textContent=U('tagline');
     $('nav-toggle').title=U('nav');$('links-label').textContent=' '+U('links');$('links-wrap').title=U('linksTip');
     $('theme-btn').title=U('theme');$('nav-label-comp').textContent=U('comp');$('nav-home').textContent=U('home');
-    $('vue-prog').textContent=U('progShort');$('vue-prog').title=U('vueProgTip');$('vue-ref').textContent=U('refShort');$('vue-ref').title=U('vueRefTip');
+    libVues();$('vue-prog').title=U('vueProgTip');$('vue-ref').title=U('vueRefTip');
+    $('btn-reglages').title=U('reglages');$('btn-reglages').setAttribute('aria-label',U('reglages'));
     
     majIdent();
     $('ident-l-nom').textContent=U('identNom');$('ident-l-courriel').textContent=U('identCourriel');$('ident-l-centre').textContent=U('identCentre');$('ident-l-mdp').textContent=U('identMdp');
@@ -1661,12 +1676,11 @@ function monter(host){
     const dedans=$('encadre').contains(R.activeElement);
     const {c,k}=encadre,st=etatComp(c),[ec,el]=deK(k),etat=[];
     if(st.maitre[k]){
-      etat.push(`<b>${esc(U('encMaitre'))}</b>`);
+      etat.push(`<b>${esc(U('encMaitre'))}</b> ${esc(decompte(st,k))}`);
       if(estAdmin()&&st.probable.has(k))etat.push(`<span class="etiq-ecart probable">${U('probableCourt')}</span>`);
-      etat.push(`<span>${esc(decompte(st,k))}</span>`);
       if(st.attente.has(k))etat.push(`<span class="att">${esc(U('encAttente'))}</span>`);
-    }else etat.push(`<b>${esc(U('encHors'))}</b>`);
-    ecartsSur(st,k).forEach(({v,e})=>{etat.push(`<span>${esc(U('ajoutePar',{c:versionNom(v)}))}${e.etat==='classe'?` (${esc(U('classeCourt'))})`:''}</span>`);etat.push(`<span>${esc(decompte(st,k))}</span>`);});
+    }else if(!ecartsSur(st,k).length)etat.push(`<b>${esc(U('encHors'))}</b>`);
+    ecartsSur(st,k).forEach(({v,e})=>{etat.push(`<span><b>${esc(U('encAjout'))}</b> ${esc(U('encPar',{c:versionNom(v)}))}${e.etat==='classe'?` (${esc(U('classeCourt'))})`:''}</span>`);etat.push(`<span>${esc(decompte(st,k))}</span>`);});
     // Ce que montre le survol : la pondération et les sous-critères du critère, les précisions de l'élément, les noms des
     // votants. Le séparateur « · » ouvre l'élément qui le suit : il ne reste jamais seul en bout de ligne.
     const E=ecById(ec,c),L=elById(el,c),vv=votesDe(st,k);
@@ -1848,11 +1862,37 @@ function monter(host){
     }));
   }
   $('btn-cloche').addEventListener('click',ev=>{
-    ev.stopPropagation();
+    ev.stopPropagation();ouvrirReglages(false);
     if(notifsOuvert)garder('notifs_lu',new Date().toISOString());
     notifsOuvert=!notifsOuvert;render();
   });
   document.addEventListener('click',ev=>{if(notifsOuvert&&!ev.composedPath().includes($('cloche'))){notifsOuvert=false;garder('notifs_lu',new Date().toISOString());render();}});
+
+  // ---- Menu ⋮ (en-tête sur deux rangées, même seuil que la règle @container de 760 px) : le bouton du compte, EN et le
+  // thème y passent; au-delà, ils restent à leur place dans l'en-tête. Fermé par un toucher ailleurs, Échap, ou après
+  // l'usage d'un de ses boutons; jamais ouvert en même temps que les notifications. ----
+  const identEntete=R.querySelector('.header-actions .ident-btn'),racine=R.querySelector('.racine');
+  function ouvrirReglages(o){reglagesOuvert=o;$('menu-reglages').hidden=!o;$('btn-reglages').setAttribute('aria-expanded',String(o));}
+  // Le seuil se lit dans la règle @container elle-même (⋮ affiché), à la largeur exacte du conteneur.
+  function placerReglages(){
+    const m=$('menu-reglages'),tel=racine.getBoundingClientRect().width>0&&getComputedStyle($('reglages')).display!=='none';
+    if(tel&&identEntete.parentNode!==m)m.append(identEntete,$('lang-btn'),$('theme-btn'));
+    else if(!tel&&identEntete.parentNode===m){ouvrirReglages(false);$('undo-btn').before(identEntete,$('lang-btn'));$('undo-btn').after($('theme-btn'));}
+    if(tel!==enTel){enTel=tel;libVues();}
+  }
+  // Vues : sur un téléphone, l'icône seule; le libellé entier reste le nom du bouton.
+  function libVues(){[['vue-prog','progShort'],['vue-ref','refShort']].forEach(([id,k])=>{const b=$(id),t=U(k);b.textContent=enTel?t.split(' ')[0]:t;b.setAttribute('aria-label',t);});}
+  placerReglages();
+  if(window.ResizeObserver)new ResizeObserver(placerReglages).observe(racine);else window.addEventListener('resize',placerReglages);
+  $('btn-reglages').addEventListener('click',()=>{
+    if(!reglagesOuvert&&notifsOuvert){notifsOuvert=false;garder('notifs_lu',new Date().toISOString());render();}
+    ouvrirReglages(!reglagesOuvert);
+  });
+  // Après EN ou le thème, le focus revient à ⋮; le bouton du compte ouvre « Mon compte », qui prend le focus.
+  $('menu-reglages').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;ouvrirReglages(false);if(!b.classList.contains('ident-btn'))$('btn-reglages').focus();});
+  // En phase de capture : un toucher sur le contenu le ferme même quand ce contenu arrête la propagation du clic.
+  document.addEventListener('click',ev=>{if(reglagesOuvert&&!ev.composedPath().includes($('reglages')))ouvrirReglages(false);},true);
+  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&reglagesOuvert&&!ev.composedPath().includes(host))ouvrirReglages(false);});
 
   function buildNav(){
     $('nav-comps').innerHTML=COMP_ORDER.map(k=>{
@@ -1920,6 +1960,7 @@ function monter(host){
       else if(encadre)fermerEncadre();
       else if(voteContre){voteContre=null;render();}
       else if(notifsOuvert){notifsOuvert=false;garder('notifs_lu',new Date().toISOString());render();}
+      else if(reglagesOuvert){ouvrirReglages(false);$('btn-reglages').focus();}
       else if(ajoutOuvert){ajoutOuvert=null;ajoutTexte='';ajoutEl='';render();}
     }
   });
