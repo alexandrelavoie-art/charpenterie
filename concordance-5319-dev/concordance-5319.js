@@ -80,6 +80,7 @@ button,input,textarea{font-family:inherit}
 .app-header .vues .vue-btn{border:none;border-radius:0;}
 .app-header .vues .vue-btn+.vue-btn{border-left:1px solid var(--border);}
 .app-header .vues .vue-btn.on{background:var(--accent);color:var(--bg);}
+.header-outils{display:contents;}
 .header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .header-actions label{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
 .header-actions input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;}
@@ -116,15 +117,7 @@ button,input,textarea{font-family:inherit}
 .sheet{background:var(--surface);border:1px solid var(--border);border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.06);max-width:820px;margin:0 auto;padding:28px 32px 40px;min-height:100%;}
 /* Mises en page selon la largeur de l'outil lui-même (pleine page ou colonne WordPress) */
 @container (max-width:860px){.content-row{flex-direction:column;overflow-y:auto;}.pane{flex:none;overflow:visible;padding:12px 12px 20px;}.sheet{padding:18px 16px 28px;}}
-@container (max-width:760px){
-  .app-header{gap:8px;padding:8px 10px;}
-  .header-doc{font-size:15px;}
-  .left-nav{position:absolute;top:0;bottom:0;left:0;z-index:60;box-shadow:4px 0 16px rgba(0,0,0,.18);}
-  .fil-barre{padding:4px 6px;gap:4px;}
-  .fil-onglet{padding:4px 8px;}
-  .el-chips-row,.ec-body{padding-left:12px;}
-  .el-body.indent{padding-left:12px;}
-}
+/* Les autres règles selon la largeur (tablettes, téléphones, colonne étroite) sont à la fin, après les règles de base. */
 
 /* Discussion de la compétence, sous les documents */
 .fil{flex-shrink:0;display:flex;flex-direction:column;border-top:1px solid var(--border);background:var(--surface);}
@@ -160,7 +153,7 @@ button,input,textarea{font-family:inherit}
 .ind-section .ec-card:last-child,.el-card:last-child{margin-bottom:0;}
 .ind-header{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;padding-bottom:5px;border-bottom:1.5px solid var(--ink);cursor:pointer;user-select:none;}
 .ind-label{font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
-.ind-pts{font-size:11px;opacity:.6;margin-left:auto;font-family:'JetBrains Mono',monospace;}
+.ind-pts{font-size:11px;opacity:.6;margin-left:auto;font-family:'JetBrains Mono',monospace;white-space:nowrap;}
 .ind-chevron{margin-top:0;align-self:center;}
 .ind-section.collapsed .ind-chevron{transform:rotate(-90deg);}
 .ind-section.collapsed{margin-bottom:12px;}
@@ -284,6 +277,7 @@ button,input,textarea{font-family:inherit}
 .tooltip ul li{padding:1px 0 1px 12px;position:relative;}
 .tooltip ul li::before{content:"–";position:absolute;left:0;opacity:.6;}
 .tooltip .tt-title{font-weight:700;margin-bottom:4px;opacity:.7;font-size:10px;text-transform:uppercase;letter-spacing:.06em;}
+.tooltip .tt-pts{margin-left:6px;white-space:nowrap;text-transform:none;letter-spacing:normal;}
 
 .modal-fond{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal{background:var(--surface);color:var(--fg);border:1px solid var(--border);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:20px 22px;width:min(430px,100%);display:flex;flex-direction:column;gap:12px;}
@@ -430,11 +424,16 @@ button,select{font-family:inherit;}
 .encadre{background:var(--surface);color:var(--fg);border:1px solid var(--border);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.25);width:min(600px,100%);max-height:100%;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:6px;}
 .encadre-tete{display:flex;gap:10px;align-items:flex-start;}
 .encadre-tete h2{flex:1;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;}
-.encadre-def{font-size:12px;color:var(--fg-muted);display:flex;flex-direction:column;gap:1px;}
+.encadre-def{font-size:12px;color:var(--fg-muted);display:flex;flex-direction:column;gap:3px;}
 .encadre-def b{color:var(--fg);font-weight:600;}
+.encadre-def .enc-pts{font-weight:700;white-space:nowrap;margin-left:4px;}
+.encadre-def ul{list-style:none;margin:1px 0 2px 14px;padding:0;}
+.encadre-def li{position:relative;line-height:1.4;}
+.encadre-def li::before{content:"–";position:absolute;left:-12px;}
 .encadre-etat{font-size:12px;display:flex;gap:4px 8px;flex-wrap:wrap;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-soft);margin-bottom:2px;}
 .encadre-etat .att{color:var(--contre);font-weight:600;}
-.encadre-etat .sep{color:var(--fg-muted);}
+.encadre-etat .sep{color:var(--fg-muted);margin-right:8px;}
+.encadre-etat .votants{flex-basis:100%;color:var(--fg-muted);}
 .arobase{color:var(--accent);font-weight:600;}
 .composer{position:relative;}
 .suggestions{position:absolute;left:16px;bottom:calc(100% - 4px);background:var(--surface);border:1px solid var(--border);border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.15);font-size:12.5px;min-width:240px;z-index:50;}
@@ -463,6 +462,149 @@ button,select{font-family:inherit;}
 .raisons li.ajout{border-left-color:var(--fort);}
 .raisons li.retrait{border-left-color:var(--info);}
 @container (max-width:860px){.ligne-t{grid-template-columns:1fr;}.ligne-t .actions{justify-content:flex-start;}.bulle{margin-left:12px;}.voile{padding:12px 8px;}.msg.rattache{margin-left:16px;}}
+
+/* ---- Tablettes et téléphones ----
+   Selon la largeur de l'outil (pleine page ou colonne WordPress) : @container. Selon l'appareil (écran tactile, sans
+   survol) : @media (hover:none) and (pointer:coarse). Ces règles suivent les règles de base pour les remplacer. */
+/* Une boîte plus haute que l'écran (code d'accès, connexion, compte) défile au lieu de passer sous le bandeau DEV. */
+.verrou-fond,.modal-fond{overflow-y:auto;}
+.verrou,.modal{margin:auto;}
+/* Colonne étroite : l'encadré, presque sans marge, commence sous le bandeau DEV. */
+@container (max-width:860px){.bandeau-dev:not([hidden])~.voile{top:18px;}}
+@container (max-width:900px){
+  /* Le menu de gauche se superpose au contenu, avec un voile; il est fermé à l'ouverture d'une compétence. */
+  .left-nav{position:absolute;top:0;bottom:0;left:0;z-index:60;box-shadow:4px 0 16px rgba(0,0,0,.18);width:min(300px,86cqw);}
+  .left-nav{transition:width .22s,visibility 0s;}
+  .left-nav.collapsed{box-shadow:none;border-right-width:0;visibility:hidden;transition:width .22s,visibility 0s .22s;}
+  .left-nav:not(.collapsed)~.main-area::after{content:"";position:absolute;inset:0;z-index:55;background:rgba(0,0,0,.35);}
+  .nav-btn{white-space:normal;line-height:1.3;}
+  .nav-txt{overflow:visible;text-overflow:clip;}
+  /* Les notifications s'ouvrent sous l'en-tête, contre son bord droit. */
+  .app-header{position:relative;}
+  .cloche{position:static;}
+  .notifs{right:10px;top:100%;}
+  .page-traiter{padding:14px 12px 24px;}
+}
+@container (max-width:760px){
+  /* En-tête sur deux rangées : ☰ et le titre (la cloche à droite), puis une bande qui défile de côté avec les vues
+     et les boutons. */
+  .app-header{gap:6px 8px;padding:6px 8px;}
+  .header-info{flex:1 1 0;min-width:0;}
+  .app-header:has(.cloche:not([hidden])) .header-info{padding-right:72px;}
+  .header-doc{font-size:15px;}
+  .header-outils{display:flex;align-items:center;gap:6px;flex:1 1 100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+  .header-outils::-webkit-scrollbar{display:none;}
+  /* Un fondu au bord droit de la bande : d'autres boutons suivent. */
+  .header-outils::after{content:"";position:sticky;right:0;flex:0 0 28px;align-self:stretch;margin-left:-22px;background:linear-gradient(to right,transparent,var(--surface) 85%);pointer-events:none;}
+  /* « À traiter » ouvre la bande : la file de l'administrateur et son compteur restent à l'écran. */
+  .header-actions{display:contents;}
+  .vues,.header-actions>*{flex-shrink:0;}
+  #btn-traiter{order:-1;}
+  .cloche{position:absolute;top:6px;right:8px;}
+  .notifs{right:0;top:calc(100% + 6px);width:min(420px,calc(100cqw - 16px));}
+  /* Documents : marges réduites, retraits ramenés, libellé du critère sous son code */
+  .pane{padding:8px 6px 16px;}
+  .sheet{padding:14px 10px 24px;}
+  .ec-head{flex-wrap:wrap;row-gap:2px;padding:7px 10px;}
+  .ec-code{flex:1 1 auto;}
+  .ec-label{order:10;flex:1 1 100%;}
+  .el-chips-row{padding:0 10px 8px 12px;}
+  .ec-body{padding:6px 10px 8px 26px;}
+  .el-body,.el-body.indent{padding-left:26px;}
+  .el-card.editable .el-body,.el-card.editable .el-body.indent{padding-left:40px;}
+  .el-card-top{padding:7px 10px;}
+  .el-label{flex-wrap:wrap;row-gap:4px;}
+  .el-text{flex:1 1 170px;}
+  .bulle{margin:6px 8px 8px 12px;}
+  .bulle input{flex:1 1 100%;min-width:0;}
+  /* Discussion : plus haute; la barre du bas se resserre */
+  .fil-barre{padding:4px 6px;gap:4px;}
+  .fil-onglet{padding:4px 8px;}
+  .fil-corps{height:clamp(200px,50vh,440px);}
+  .fil-titre{padding:6px 10px 0;}
+  .fil-liste{padding:6px 10px;}
+  .composer{padding:6px 10px 8px;}
+  .msg.rattache{margin-left:10px;}
+  /* Fenêtres et encadré sur toute la largeur */
+  .voile{padding:8px 6px;}
+  .encadre{width:100%;padding:12px;}
+  .modal-fond{padding:10px;}
+  .modal{padding:16px;}
+  .verrou{padding:20px 18px;}
+  .ligne-t{padding:8px 10px;}
+}
+/* Clavier ouvert dans la discussion, sur un écran bas : la bande des boutons et le titre de la discussion s'effacent le
+   temps de la saisie, et la discussion se resserre sur la hauteur qui reste, la zone de saisie au-dessus du clavier. */
+@media (max-height:560px){@container (max-width:760px){
+  .racine:has(.fil textarea:focus) .header-outils,.racine:has(.fil textarea:focus) .header-sous,.racine:has(.fil textarea:focus) .fil-titre{display:none;}
+  .racine:has(.fil textarea:focus) .fil{flex:0 1 auto;min-height:0;}
+  .racine:has(.fil textarea:focus) .fil-corps{flex:0 1 auto;min-height:0;}
+}}
+@media (hover:none) and (pointer:coarse){
+  /* Cibles d'environ 40 px pour le doigt, texte d'au moins 12 px, champs à 16 px (sans agrandissement sur iOS) */
+  .bandeau-dev{font-size:12px;}
+  .app-header button,.header-actions label{min-height:40px;padding:6px 12px;font-size:13px;}
+  #nav-toggle,.icon-btn,.lang-btn{min-width:40px;}
+  .lang-btn{font-size:12px!important;}
+  .ind-header{padding-top:8px;padding-bottom:8px;}
+  .header-actions input[type=checkbox]{width:20px;height:20px;}
+  .header-sous{font-size:12px;}
+  .compteur{font-size:12px;}
+  .lang-choice,.ident-accueil{min-height:40px;font-size:13px;}
+  .bascule .lang-choice{min-height:36px;padding:6px 16px;font-size:13px;}
+  .carte-code,.carte-pied{font-size:12px;}
+  .nav-label{font-size:12px;}
+  .nav-btn{padding:10px;font-size:14px;}
+  .nav-home{padding:10px;font-size:14px;}
+  .nav-prog{font-size:12px;}
+  .fil-onglet{min-height:40px;padding:6px 14px;font-size:13px;}
+  .comp-nav{min-height:40px;padding:6px 10px;font-size:13.5px;}
+  .ec-head{padding-top:9px;padding-bottom:9px;}
+  .ec-code,.el-code,.ec-pts,.ind-pts,.ec-chevron{font-size:12px;}
+  .ec-edit{width:40px;height:40px;margin:-9px 0;opacity:.85;font-size:16px;}
+  .sub-list li,.pc-list li{font-size:13px;}
+  .el-chips-row,.ec-chips-row{gap:6px;}
+  .el-chip,.ec-chip{min-height:34px;padding:4px 9px;font-size:12px;}
+  .el-chip .etiq,.ec-chip .etiq{font-size:11px;}
+  .pouce{min-width:38px;min-height:38px;justify-content:center;padding:4px 6px;font-size:15px;}
+  .pouce .pouce-ic{opacity:.7;}
+  .pouce small{font-size:12.5px;}
+  .plus-ajout{min-width:38px;min-height:34px;font-size:15px;}
+  .bulle input,.note-ecart input,.bulle.ajout select{font-size:16px;min-height:42px;padding:8px 10px;}
+  .btn-p,.btn-s{min-height:40px;padding:6px 14px;font-size:13.5px;}
+  .sp-editing-badge{font-size:13px;padding:0 0 0 10px;}
+  .sp-close{min-width:40px;min-height:36px;font-size:18px;}
+  .el-card.editable .el-card-top{padding-left:52px;}
+  .el-card-top .el-row-check{left:10px;top:7px;width:30px;height:30px;font-size:16px;}
+  .el-card-top .el-row-check::before{content:"";position:absolute;inset:-7px;}
+  .el-card.editable .el-body,.el-card.editable .el-body.indent{padding-left:52px;}
+  .puce-probable{min-height:32px;padding:2px 10px;font-size:12px;}
+  .puce-probable span{font-size:18px;}
+  .note-ecart{font-size:13px;}
+  /* Sans survol : ✎ et 🗑 de ses propres messages restent visibles */
+  .msg-actions{opacity:1;}
+  .msg-actions button{min-width:40px;min-height:36px;font-size:16px;}
+  .msg-actions .btn-p,.msg-actions .btn-s{min-height:40px;font-size:13px;padding:4px 12px;}
+  .msg-tete,.msg-tete b{font-size:12px;}
+  .msg-texte{font-size:14px;}
+  .tag{font-size:12px;min-height:32px;padding:3px 8px;}
+  .geste{font-size:12.5px;}
+  .role{font-size:11px;}
+  .fil-titre small{font-size:12px;}
+  .composer textarea,.msg-edition textarea{font-size:16px;}
+  .composer textarea::placeholder{font-size:13px;}
+  .composer button{min-height:44px;font-size:13px;}
+  .modal input,.modal select,.verrou input{font-size:16px;min-height:44px;}
+  .modal-actions button,.verrou button{min-height:44px;}
+  .ident-onglets button{min-height:44px;}
+  .notifs-tete .val-lien{min-height:36px;font-size:13px;}
+  .notif{padding:10px 12px;}
+  .notif small{font-size:12px;}
+  #encadre-fermer{min-width:40px;min-height:40px;font-size:15px;}
+  .encadre-def,.encadre-etat{font-size:13px;}
+  .ligne-t .comp-t,.ligne-t .detail,.tag-t,.section-t .aide{font-size:12.5px;}
+  .raisons{font-size:13px;}
+}
 `;
 
 const GABARIT=`<div class="racine">
@@ -491,6 +633,7 @@ const GABARIT=`<div class="racine">
     <div class="header-info">
       <div class="header-doc" id="header-doc"></div><div class="header-sous" id="header-sous" hidden></div>
     </div>
+    <div class="header-outils">
     <div class="vues" role="group"><button class="vue-btn" id="vue-prog" data-vue="prog"></button><button class="vue-btn" id="vue-ref" data-vue="ref"></button></div>
     <div class="header-actions">
       <label id="links-wrap">
@@ -503,6 +646,7 @@ const GABARIT=`<div class="racine">
       <button class="lang-btn" id="lang-btn"></button>
       <button id="undo-btn" class="icon-btn" disabled><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 2.5 7 6 10.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7h6.5a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
       <button id="theme-btn" class="icon-btn"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></svg></button>
+    </div>
     </div>
   </header>
   <div class="body-row">
@@ -659,7 +803,11 @@ function monter(host){
 
   let lang=lire('lang')==='en'?'en':'fr';
   let curComp=COMPETENCES[lire('comp')]?lire('comp'):COMP_ORDER[0];
-  const etroit=()=>(host.clientWidth||window.innerWidth)<=760;
+  // Tablette ou téléphone (même seuil que les règles @container) : le menu de gauche se superpose au contenu.
+  const etroit=()=>(host.clientWidth||window.innerWidth)<=900;
+  // Programme et référentiel empilés (colonne étroite) : un document peut être hors de l'écran.
+  const empile=()=>getComputedStyle($('content-row')).flexDirection==='column';
+  const montrer=(sel,bloc)=>{if(!empile())return;const n=R.querySelector(sel);if(n)n.scrollIntoView({block:bloc||'start',behavior:'smooth'});};
   let navOpen=!etroit(),crossRef=true;
   let vues={prog:true,ref:true};try{const v=JSON.parse(lire('vues'));if(v&&(v.prog||v.ref))vues={prog:!!v.prog,ref:!!v.ref};}catch(e){}
   let version='';   // '' : la version maître (les participants n'éditent pas)
@@ -705,6 +853,8 @@ function monter(host){
   const elById=(id,c=curComp)=>COMPETENCES[c].els.find(e=>e.id===id);
   const ecById=(id,c=curComp)=>COMPETENCES[c].ec.find(e=>e.id===id);
   const libEl=(id,c)=>{const e=elById(id,c);if(!e)return '';const m=T(e.label).match(/^.+?\s+—\s+(.+)$/);return m?m[1]:T(e.label);};
+  // Pondération d'un critère, comme dans le référentiel : « 5 pts » (espace insécable), ou « Oui / Non » sans points.
+  const ponderation=ec=>ec.pts!=null?ec.pts+' '+U('pts'):U('yesno');
 
   function applyUI(){
     host.lang=lang;
@@ -725,11 +875,16 @@ function monter(host){
   function setLang(l){lang=l;garder('lang',l);applyUI();if(!$('ident').hidden)modeIdentite(modeIdent);render();}
 
   // ---- Données partagées (feuille Google) ou locales (ce navigateur) ----
-  function reponse(r){if(!r.ok)throw new Error('reseau');return r.json().then(x=>{if(!x||!x.ok)throw new Error(x&&x.erreur||'reseau');return {journal:x.journal||[],messages:x.messages||[],votes:x.votes||[],centres:x.centres||[],participants:x.participants||[],compte:x.compte};});}
+  // Numéro de version de la feuille : la lecture de routine (chaque minute, retour sur l'onglet) le donne, et la feuille
+  // répond « inchange » s'il n'a pas changé. Une lecture complète au moins toutes les 10 minutes; jamais de numéro
+  // envoyé à un script qui n'en donne pas (ancienne version du script).
+  let versionFeuille=null,lectureComplete=0;
+  const RELECTURE_MS=600000;
+  function reponse(r){if(!r.ok)throw new Error('reseau');return r.json().then(x=>{if(!x||!x.ok)throw new Error(x&&x.erreur||'reseau');if(x.inchange)return {inchange:true,version:x.version};return {journal:x.journal||[],messages:x.messages||[],votes:x.votes||[],centres:x.centres||[],participants:x.participants||[],compte:x.compte,version:x.version};});}
   const local=k=>JSON.parse(lire(k)||'[]');
   const poster=b=>fetch(urlFeuille,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({code,...b})}).then(reponse);
   const backend=enLigne?{
-    charger:()=>fetch(urlFeuille+(urlFeuille.includes('?')?'&':'?')+'code='+encodeURIComponent(code)+'&t='+Date.now()).then(reponse),
+    charger:v=>fetch(urlFeuille+(urlFeuille.includes('?')?'&':'?')+'code='+encodeURIComponent(code)+(v!=null?'&version='+encodeURIComponent(v):'')+'&t='+Date.now()).then(reponse),
     ajouter:p=>poster({participant,courriel,motDePasse:mdp,...p}),
     compte:c=>poster({compte:c})
   }:{
@@ -760,6 +915,7 @@ function monter(host){
     return 'erreur-reseau';
   }
   function appliquer(d){
+    versionFeuille=d.version!=null?String(d.version):null;lectureComplete=Date.now();
     const avant=JSON.stringify([journal,messages,votes,centres,participants]);
     journal=d.journal;messages=d.messages;votes=d.votes||[];
     if(d.centres)centres=d.centres;
@@ -777,13 +933,21 @@ function monter(host){
     return change;
   }
 
+  // silencieux : la lecture de routine, qui donne le numéro de version connu; rien n'est redessiné si rien n'a changé.
   function charger(silencieux){
     if(!silencieux&&pret){sync='chargement';render();}
-    return enFile(()=>backend.charger().then(d=>{
+    let syncAvant;
+    return enFile(()=>Promise.resolve().then(()=>{
+      syncAvant=sync;
+      // Le relevé qui précède les 10 minutes relit tout : le suivant, une minute plus tard, arriverait après.
+      const v=silencieux&&pret&&versionFeuille!=null&&Date.now()-lectureComplete+60000<=RELECTURE_MS?versionFeuille:null;
+      return backend.charger(v);
+    }).then(d=>{
+      if(d.inchange){if(d.version!=null)versionFeuille=String(d.version);if(sync!=='envoi')sync='';return sync!==syncAvant;}
       const change=appliquer(d);
       if(sync!=='envoi')sync='';
       if(!pret){pret=true;afficherContenu();return true;}
-      return change||!silencieux;
+      return change||!silencieux||sync!==syncAvant;
     },e=>{
       const s=erreur(e);
       if(s)sync=s;
@@ -1080,7 +1244,8 @@ function monter(host){
   function showTT(ev,item,notes){
     if(!item)return;
     const pcs=item.pcs||item.subs&&item.subs.map(s=>({t:s}))||[];
-    ttEl.innerHTML=`<div class="tt-title">${T(item.label)}</div>${pcs.length?`<ul>${pcs.map(p=>`<li>${T(p.t!==undefined?p.t:p)}</li>`).join('')}</ul>`:''}${(notes||[]).map(n=>`<div style="margin-top:6px">${esc(n)}</div>`).join('')}`;
+    // pond : la pondération d'un critère, à la suite de son nom.
+    ttEl.innerHTML=`<div class="tt-title">${T(item.label)}${item.pond?`<span class="tt-pts">${esc(item.pond)}</span>`:''}</div>${pcs.length?`<ul>${pcs.map(p=>`<li>${T(p.t!==undefined?p.t:p)}</li>`).join('')}</ul>`:''}${(notes||[]).map(n=>`<div style="margin-top:6px">${esc(n)}</div>`).join('')}`;
     ttEl.hidden=false;posTT(ev);
   }
   function posTT(ev){
@@ -1167,14 +1332,14 @@ function monter(host){
     comp().indicateurs.forEach((ind,si)=>{
       const pts=ind.ecs.reduce((a,id)=>{const e=ecById(id);return a+(e?e.pts:0);},0);
       const indKey=curComp+':'+si,indOpen=!collapsedInds.has(indKey);
-      h+=`<div class="ind-section${indOpen?'':' collapsed'}"><div class="ind-header" data-indtgl="${indKey}" role="button" tabindex="0" aria-expanded="${indOpen}"><span class="ind-label">${T(ind.label)}</span><span class="ind-pts">${pts?pts+' '+U('pts'):''}</span><span class="ec-chevron ind-chevron">▼</span></div>`;
+      h+=`<div class="ind-section${indOpen?'':' collapsed'}"><div class="ind-header" data-indtgl="${indKey}" role="button" tabindex="0" aria-expanded="${indOpen}"><span class="ind-label">${T(ind.label)}</span><span class="ind-pts">${pts?pts+' '+U('pts'):''}</span><span class="ec-chevron ind-chevron">▼</span></div>`;
       if(indOpen)ind.ecs.forEach(ecId=>{
         const ec=ecById(ecId);if(!ec)return;
         const open=expandedEcs.has(ecId),sel=selectedEc===ecId||ajoutOuvert===ecId;
         h+=`<div class="ec-card${open?' expanded':''}${sel?' selected':''}" data-eckey="${ecId}">`;
         h+=`<div class="ec-head" data-tgl="${ecId}" role="button" tabindex="0" aria-expanded="${open}">`;
         h+=`<span class="ec-code">${ecCourt(ecId)}</span><span class="ec-label">${T(ec.label)}</span>`;
-        h+=`<span class="ec-pts">${ec.pts!=null?ec.pts+' '+U('pts'):U('yesno')}</span>`;
+        h+=`<span class="ec-pts">${ponderation(ec)}</span>`;
         if(edit){const t=sel?U('editClose'):U('editMaitre');h+=`<button class="ec-edit${sel?' on':''}" data-edit="${ecId}" title="${esc(t)}" aria-label="${esc(t)}">✎</button>`;}
         h+=`<span class="ec-chevron">▼</span></div>`;
         if(!open&&crossRef)h+=chipsRef(st,ecId);
@@ -1203,8 +1368,9 @@ function monter(host){
     el.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',ev=>{
       ev.stopPropagation();
       const id=b.dataset.edit;
-      if(selectedEc===id){selectedEc=null;brouillons={};render();return;}
-      const ouvrir=()=>{if(!estAdmin())return;selectionner(id);render();};
+      if(selectedEc===id){selectedEc=null;brouillons={};render();montrer(`#sheet-ref [data-eckey="${id}"]`,'center');return;}
+      // Documents empilés : le programme, qui passe en mode édition, est amené à l'écran.
+      const ouvrir=()=>{if(!estAdmin())return;selectionner(id);render();montrer('#sheet-prog .sp-header');};
       if(!estAdmin()){ouvrirIdentite(ouvrir,true);return;}
       ouvrir();
     }));
@@ -1230,6 +1396,8 @@ function monter(host){
         ajoutOuvert=ajoutOuvert===id?null:id;ajoutTexte='';ajoutEl='';voteContre=null;
         if(ajoutOuvert){if(!vues.prog){vues.prog=true;garder('vues',JSON.stringify(vues));}comp().indicateurs.forEach((ind,si)=>{if(ind.ecs.includes(id))collapsedInds.delete(curComp+':'+si);});}
         render();
+        // Documents empilés : le programme en mode ajout est amené à l'écran; refermer ramène au critère.
+        if(ajoutOuvert)montrer('#sheet-prog .sp-header');else montrer(`#sheet-ref [data-eckey="${id}"]`,'center');
       };
       if(!identifie(ouvrir))return;
       ouvrir();
@@ -1317,7 +1485,7 @@ function monter(host){
     el.innerHTML=h;
     bindElCards(el);
     if(ajout){
-      $('sp-fermer-ajout').addEventListener('click',()=>{ajoutOuvert=null;ajoutEl='';ajoutTexte='';render();});
+      $('sp-fermer-ajout').addEventListener('click',()=>{ajoutOuvert=null;ajoutEl='';ajoutTexte='';render();montrer(`#sheet-ref [data-eckey="${ajout}"]`,'center');});
       el.querySelectorAll('[data-elrow] .el-row-check').forEach(chk=>{
         const row=chk.closest('[data-elrow]');
         chk.addEventListener('click',ev=>{
@@ -1333,14 +1501,14 @@ function monter(host){
         f.addEventListener('submit',ev=>{
           ev.preventDefault();const r=f.querySelector('input').value.trim();if(!r){f.querySelector('input').focus();return;}
           const ec=ajout,elId=f.dataset.ajoutForm;ajoutOuvert=null;ajoutEl='';ajoutTexte='';
-          proposerAjout(ec,elId,encoderMentions(r));
+          proposerAjout(ec,elId,encoderMentions(r));montrer(`#sheet-ref [data-eckey="${ec}"]`,'center');
         });
         f.querySelector('[data-annuler-ajout]').addEventListener('click',ev=>{ev.stopPropagation();ajoutEl='';ajoutTexte='';render();});
       }
       return;
     }
     if(!editing)return;
-    $('sp-deselect').addEventListener('click',()=>{selectedEc=null;render();});
+    $('sp-deselect').addEventListener('click',()=>{const ec=selectedEc;selectedEc=null;render();montrer(`#sheet-ref [data-eckey="${ec}"]`,'center');});
     el.querySelectorAll('[data-elrow] .el-row-check').forEach(chk=>{
       const row=chk.closest('[data-elrow]');
       chk.addEventListener('click',ev=>{
@@ -1386,7 +1554,7 @@ function monter(host){
     root.querySelectorAll('.ec-chip[data-ecid]').forEach(chip=>{
       const ec=ecById(chip.dataset.ecid);
       if(!ec)return;
-      chip.addEventListener('mouseenter',ev=>showTT(ev,{label:ec.label,pcs:ec.subs.map(s=>({t:s}))}));
+      chip.addEventListener('mouseenter',ev=>showTT(ev,{label:ec.label,pond:ponderation(ec),pcs:ec.subs.map(s=>({t:s}))}));
       chip.addEventListener('mouseleave',hideTT);
     });
   }
@@ -1499,9 +1667,17 @@ function monter(host){
       if(st.attente.has(k))etat.push(`<span class="att">${esc(U('encAttente'))}</span>`);
     }else etat.push(`<b>${esc(U('encHors'))}</b>`);
     ecartsSur(st,k).forEach(({v,e})=>{etat.push(`<span>${esc(U('ajoutePar',{c:versionNom(v)}))}${e.etat==='classe'?` (${esc(U('classeCourt'))})`:''}</span>`);etat.push(`<span>${esc(decompte(st,k))}</span>`);});
+    // Ce que montre le survol : la pondération et les sous-critères du critère, les précisions de l'élément, les noms des
+    // votants. Le séparateur « · » ouvre l'élément qui le suit : il ne reste jamais seul en bout de ligne.
+    const E=ecById(ec,c),L=elById(el,c),vv=votesDe(st,k);
+    const liste=l=>l.length?`<ul>${l.map(x=>`<li>${esc(T(x))}</li>`).join('')}</ul>`:'';
+    // Les votants d'un lien qui compte ses votes (version maître ou ajout proposé), comme le décompte.
+    const montrerVotes=st.maitre[k]||ecartsSur(st,k).length>0;
+    const votants=(montrerVotes?[['👍',vv.pour],['👎',vv.contre]]:[]).filter(([,l])=>l.length).map(([ic,l])=>`<span class="votants">${ic} ${esc(noms(l))}</span>`).join('');
     $('encadre-boite').innerHTML=`<div class="encadre-tete"><h2 id="encadre-titre">${esc(lienTxt(k))}</h2><button type="button" class="btn-s" id="encadre-fermer" aria-label="${esc(U('fermer'))}" title="${esc(U('fermer'))}">✕</button></div>`
-      +`<div class="encadre-def"><span><b>${esc(U('critere'))}</b> ${esc(T((ecById(ec,c)||{}).label))}</span><span><b>${esc(U('element'))}</b> ${esc(libEl(el,c))}</span></div>`
-      +`<div class="encadre-etat">${etat.join('<span class="sep">·</span>')}</div>`
+      +`<div class="encadre-def"><div><b>${esc(U('critere'))}</b> ${esc(T((E||{}).label))}${E?`<span class="enc-pts">${esc(ponderation(E))}</span>`:''}${E?liste(E.subs):''}</div>`
+      +`<div><b>${esc(U('element'))}</b> ${esc(libEl(el,c))}${L?liste(L.pcs.map(p=>p.t)):''}</div></div>`
+      +`<div class="encadre-etat">${etat.map((x,i)=>`<span class="et">${i?'<span class="sep">·</span>':''}${x}</span>`).join('')}${votants}</div>`
       +(filHtml(st,k)||`<p class="vide">${esc(U('encVide'))}</p>`);
     $('encadre-fermer').addEventListener('click',fermerEncadre);
     if(dedans&&!$('encadre').contains(R.activeElement))$('encadre-fermer').focus();
