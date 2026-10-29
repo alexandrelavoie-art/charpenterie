@@ -439,6 +439,10 @@ button,select{font-family:inherit;}
 .ligne-c input,.ligne-c select{font-size:12px;border:1px solid var(--border);border-radius:3px;padding:3px 6px;background:var(--bg);color:var(--fg);}
 .ligne-c input{flex:1 1 220px;min-width:0;}
 .ligne-c .ident-erreur{flex-basis:100%;color:var(--contre);font-weight:600;font-size:12px;}
+/* Membres : 🗑 d'un compte (administrateurs), puis sa confirmation sous la liste du centre */
+.membres .suppr-m{border:none;background:none;cursor:pointer;font-size:12px;padding:1px 4px;border-radius:3px;color:var(--fg-muted);}
+.membres .suppr-m:hover{background:var(--surface-2);color:var(--fg);}
+.ligne-c.confirmer-m{margin:8px 0 0 12px;border-color:var(--contre);}
 @container (max-width:860px){.ligne-t{grid-template-columns:1fr;}.ligne-t .actions{justify-content:flex-start;}.bulle{margin-left:12px;}.voile{padding:12px 8px;}.msg.rattache{margin-left:16px;}}
 
 /* ---- Tablettes et téléphones ----
@@ -733,7 +737,7 @@ const UI={
   traiterS1:'Liens contestés',
   traiterS2:"Ajouts proposés",
   traiterVide:'Rien à traiter pour le moment.',ajoutePar:"ajout proposé par {c}",fermer:'Fermer',encMaitre:'Votes :',encHors:'Lien retiré',encAjout:'Ajout proposé',encPar:'par {c}',encAttente:"en attente d'une décision des administrateurs",encVide:'Aucun geste ni commentaire sur ce lien.',classeCourt:"non retenue",
-  membres:'Membres',sansCentre:'Sans centre',nCompte:'{n} compte',nComptes:'{n} comptes',renommer:'Renommer',fusionnerAvec:'Fusionner avec…',fusionner:'Fusionner',confirmerFusion:'Fusionner « {a} » dans « {b} »?',eDoublon:'Un autre centre porte déjà ce nom.',
+  membres:'Membres',sansCentre:'Sans centre',nCompte:'{n} compte',nComptes:'{n} comptes',renommer:'Renommer',fusionnerAvec:'Fusionner avec…',fusionner:'Fusionner',confirmerFusion:'Fusionner « {a} » dans « {b} »?',supprimerMembre:'Supprimer ce compte et ses traces',confirmerSupprMembre:'Supprimer le compte de « {n} »{c}?',tracesSuppr:"Traces effacées aussi : {l}.",aucuneTrace:"Ce compte n'a laissé aucune trace.",definitif:'Ce geste est définitif.',n1Message:'1 message',nMessages:'{n} messages',n1Vote:'1 vote',nVotes:'{n} votes',n1Prop:"1 proposition d'ajout",nProps:"{n} propositions d'ajout",et:'et',eCompteAdmin:"Un compte d'administrateur ne se supprime pas ici.",participantRetire:'participant retiré',eDoublon:'Un autre centre porte déjà ce nom.',
   notifications:'Notifications',toutLu:'Tout marquer comme lu',aucuneNotif:'Aucune notification.',
   nMention:'{n} a mentionné votre nom dans la discussion de {comp}.',nDecisionMaintenu:'{n} a maintenu le lien {l} ({comp}), contre lequel vous avez voté.',nDecisionRetrait:'{n} a retiré le lien {l} ({comp}), contre lequel vous avez voté.',
   nAdopte:"{n} a adopté votre proposition : {l} ({comp}).",nClasse:"{n} n'a pas retenu votre proposition : {l} ({comp}).",nRemis:'Le lien {l} ({comp}) est remis : votre vote compte de nouveau.',
@@ -768,7 +772,7 @@ const UI={
   traiterS1:'Contested links',
   traiterS2:"Proposed additions",
   traiterVide:'Nothing to review for now.',ajoutePar:"addition proposed by {c}",fermer:'Close',encMaitre:'Votes:',encHors:'Link removed',encAjout:'Proposed addition',encPar:'by {c}',encAttente:'awaiting a decision by the administrators',encVide:'No changes or comments on this link.',classeCourt:"not retained",
-  membres:'Members',sansCentre:'No centre',nCompte:'{n} account',nComptes:'{n} accounts',renommer:'Rename',fusionnerAvec:'Merge with…',fusionner:'Merge',confirmerFusion:'Merge "{a}" into "{b}"?',eDoublon:'Another centre already has this name.',
+  membres:'Members',sansCentre:'No centre',nCompte:'{n} account',nComptes:'{n} accounts',renommer:'Rename',fusionnerAvec:'Merge with…',fusionner:'Merge',confirmerFusion:'Merge "{a}" into "{b}"?',supprimerMembre:'Delete this account and its traces',confirmerSupprMembre:'Delete the account of "{n}"{c}?',tracesSuppr:'Traces also deleted: {l}.',aucuneTrace:'This account left no traces.',definitif:'This cannot be undone.',n1Message:'1 message',nMessages:'{n} messages',n1Vote:'1 vote',nVotes:'{n} votes',n1Prop:'1 proposed addition',nProps:'{n} proposed additions',et:'and',eCompteAdmin:'An administrator account cannot be deleted here.',participantRetire:'former participant',eDoublon:'Another centre already has this name.',
   notifications:'Notifications',toutLu:'Mark all as read',aucuneNotif:'No notifications.',
   nMention:'{n} mentioned you in the {comp} discussion.',nDecisionMaintenu:'{n} kept the link {l} ({comp}), which you voted against.',nDecisionRetrait:'{n} removed the link {l} ({comp}), which you voted against.',
   nAdopte:"{n} adopted your proposal: {l} ({comp}).",nClasse:"{n} did not retain your proposal: {l} ({comp}).",nRemis:'The link {l} ({comp}) is back: your vote counts again.',
@@ -828,7 +832,8 @@ function monter(host){
   let notifsOuvert=false,vueActive='landing';
   let reglagesOuvert=false,pileRendu=null;   // menu ⋮ ouvert (en-tête du téléphone); documents empilés au dernier rendu
   let voteContreTexte='';   // saisie en cours, gardée d'un rendu à l'autre
-  let centreEdition=null,centreFusion=null,centreErreur=null;   // section « Centres » de « À traiter » : {id, nom}, {de, vers}, {id, cle}
+  let centreEdition=null,centreFusion=null,centreErreur=null;
+  let membreSuppr=null,membreErreur=null;   // « Membres » : le compte dont on confirme la suppression, et l'erreur reçue   // section « Centres » de « À traiter » : {id, nom}, {de, vers}, {id, cle}
   const connecte=()=>!!participant;
   const estAdmin=()=>role==='administrateur'&&!!mdp&&!!participant;
   const moi=()=>participant;
@@ -906,7 +911,9 @@ function monter(host){
     ajouter:p=>poster({participant,courriel,motDePasse:mdp,...p}),
     compte:c=>poster({compte:c}),
     // Centres (administrateurs) : {renommer: {id, nom}} ou {fusionner: {de, vers}}.
-    centres:op=>poster({participant,courriel,motDePasse:mdp,centres:op})
+    centres:op=>poster({participant,courriel,motDePasse:mdp,centres:op}),
+    // Supprimer un compte et ses traces (administrateurs).
+    supprimerCompte:id=>poster({participant,courriel,motDePasse:mdp,supprimerCompte:id})
   };
   // Une requête à la fois : une réponse plus ancienne ne peut pas écraser une plus récente.
   let file=Promise.resolve();
@@ -1597,8 +1604,9 @@ function monter(host){
     encadre=null;render();
     const b=encadreRetour&&R.querySelector(encadreRetour);encadreRetour='';if(b)b.focus();
   }
-  const decoderMentions=t=>String(t).replace(/@\[(\d+)\]/g,(_,id)=>{const p=participants.find(x=>x.id===id);return '@'+(p?p.nom:id);});
-  const avecMentions=t=>esc(t).replace(/@\[(\d+)\]/g,(_,id)=>{const p=participants.find(x=>x.id===id);return `<span class="arobase">@${esc(p?p.nom:id)}</span>`;});
+  // Mention d'un compte supprimé : « @participant retiré ».
+  const decoderMentions=t=>String(t).replace(/@\[(\d+)\]/g,(_,id)=>{const p=participants.find(x=>x.id===id);return '@'+(p?p.nom:U('participantRetire'));});
+  const avecMentions=t=>esc(t).replace(/@\[(\d+)\]/g,(_,id)=>{const p=participants.find(x=>x.id===id);return `<span class="arobase">@${esc(p?p.nom:U('participantRetire'))}</span>`;});
   function texteEvt(e){
     const n=quiTexte(e.x),c=nomDe(e.prop);
     return U({ajout:'eAjout',retrait:'eRetrait',remis:'eRemis',maintenu:'eMaintenu',adopte:'eAdopte',classe:'eClasse',propose:'eEcartAjout'}[e.type],{n,c});
@@ -1829,7 +1837,10 @@ function monter(host){
   function renderMembres(){
     const tri=centres.slice().sort((a,b)=>a.nom.localeCompare(b.nom,lang,{sensitivity:'base'}));
     const parNom=(a,b)=>a.nom.localeCompare(b.nom,lang,{sensitivity:'base'});
-    const liste=l=>`<ul class="membres">${l.slice().sort(parNom).map(p=>`<li><b>${esc(p.nom)}</b>${p.role==='administrateur'?`<span class="role">admin</span>`:''}</li>`).join('')}</ul>`;
+    // Administrateurs : 🗑 sur chaque compte de participant (ni le sien ni celui d'un autre administrateur).
+    const suppr=p=>estAdmin()&&p.role!=='administrateur'&&p.id!==participant?`<button type="button" class="suppr-m" data-membre-suppr="${esc(p.id)}" title="${esc(U('supprimerMembre'))}" aria-label="${esc(U('supprimerMembre'))}">🗑</button>`:'';
+    const liste=l=>`<ul class="membres">${l.slice().sort(parNom).map(p=>`<li><b>${esc(p.nom)}</b>${p.role==='administrateur'?`<span class="role">admin</span>`:''}${suppr(p)}</li>`).join('')}</ul>`
+      +(membreSuppr&&l.some(p=>p.id===membreSuppr)?confirmerSuppr(l.find(p=>p.id===membreSuppr)):'');
     const ligneC=c=>{
       const n=participants.filter(p=>p.centre===c.id).length;
       const err=centreErreur&&centreErreur.id===c.id?`<span class="ident-erreur" role="alert">${esc(U(centreErreur.cle))}</span>`:'';
@@ -1846,7 +1857,36 @@ function monter(host){
     if(sans.length)h+=`<div class="groupe-m"><div class="ligne-c"><span class="nom-c">${esc(U('sansCentre'))}</span><span class="detail">${esc(U(sans.length===1?'nCompte':'nComptes',{n:sans.length}))}</span></div>${liste(sans)}</div>`;
     const P=$('page-membres');
     P.innerHTML=h;
-    if(estAdmin())lierCentres(P);
+    if(estAdmin()){lierCentres(P);lierMembres(P);}
+  }
+  // Ce que la suppression d'un compte efface : ses messages (raisons comprises), les liens où il a voté, ses propositions.
+  function confirmerSuppr(p){
+    const nb=(n,un,plus)=>n===1?U(un):U(plus,{n});
+    const m=messages.filter(x=>x.participant===p.id&&x.type!=='modif'&&x.type!=='supprime').length;
+    const v=new Set(votes.filter(x=>x.participant===p.id).map(x=>x.comp+'|'+K(x.ec,x.el))).size;
+    const pr=journal.filter(x=>x.participant===p.id&&x.geste==='proposé').length;
+    const l=[m&&nb(m,'n1Message','nMessages'),v&&nb(v,'n1Vote','nVotes'),pr&&nb(pr,'n1Prop','nProps')].filter(Boolean);
+    const liste=l.length>1?l.slice(0,-1).join(', ')+' '+U('et')+' '+l[l.length-1]:l[0];
+    const nc=nomCentre(p.centre),err=membreErreur?`<span class="ident-erreur" role="alert">${esc(U(membreErreur))}</span>`:'';
+    return `<div class="ligne-c confirmer-m"><span>${esc(U('confirmerSupprMembre',{n:p.nom,c:nc?' ('+nc+')':''}))} ${esc(l.length?U('tracesSuppr',{l:liste}):U('aucuneTrace'))} <b>${esc(U('definitif'))}</b></span>`
+      +`<span class="actions"><button type="button" class="btn-p danger" data-membre-confirmer>${U('supprimer')}</button><button type="button" class="btn-s" data-membre-annuler>${U('annuler')}</button></span>${err}</div>`;
+  }
+  function lierMembres(P){
+    P.querySelectorAll('[data-membre-suppr]').forEach(b=>b.addEventListener('click',()=>{
+      membreSuppr=b.dataset.membreSuppr;membreErreur=null;render();
+      const c=P.querySelector('[data-membre-annuler]');if(c)c.focus();
+    }));
+    P.querySelectorAll('[data-membre-annuler]').forEach(b=>b.addEventListener('click',()=>{membreSuppr=null;membreErreur=null;render();}));
+    const ok=P.querySelector('[data-membre-confirmer]');
+    if(ok)ok.addEventListener('click',()=>supprimerCompte(membreSuppr));
+  }
+  // La feuille répond avec tout : le compte et ses traces disparaissent de l'affichage.
+  function supprimerCompte(id){
+    sync='envoi';render();
+    return enFile(()=>backend.supprimerCompte(id).then(d=>{appliquer(d);cache=null;sync='';membreSuppr=null;membreErreur=null;},e=>{
+      if(e.message==='compte-admin'){sync='';membreErreur='eCompteAdmin';return;}
+      sync=erreur(e);membreSuppr=null;
+    }).then(()=>render()));
   }
   function lierCentres(P){
     const raz=()=>{centreEdition=null;centreFusion=null;centreErreur=null;};
@@ -2041,6 +2081,7 @@ function monter(host){
       else if(notifsOuvert){notifsOuvert=false;garder('notifs_lu',new Date().toISOString());render();}
       else if(reglagesOuvert){ouvrirReglages(false);$('btn-reglages').focus();}
       else if(ajoutOuvert){ajoutOuvert=null;ajoutTexte='';ajoutEl='';render();}
+      else if(membreSuppr){membreSuppr=null;membreErreur=null;render();}
     }
   });
   // Échap ferme l'encadré même si le focus est sorti de l'outil.
