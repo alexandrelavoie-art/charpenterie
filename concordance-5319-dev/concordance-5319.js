@@ -323,6 +323,9 @@ button,select{font-family:inherit;}
 .bascule .lang-choice:hover{color:var(--fg);}
 .bascule .lang-choice.active{background:var(--accent);color:var(--bg);box-shadow:0 1px 2px rgba(0,0,0,.18);cursor:default;}
 .verrou .ident-erreur{color:var(--contre);font-weight:600;}
+.verrou .mdp-champ input{flex:1;padding-right:40px;}
+.verrou .oeil{border:none;background:none;color:var(--fg-muted);padding:0;}
+.verrou .oeil:hover{color:var(--fg);}
 
 /* En-tête : liste « À traiter », cloche */
 .app-header button.on{background:var(--accent);border-color:var(--accent);color:var(--bg);}
@@ -644,7 +647,7 @@ const GABARIT=`<div class="racine">
 <div class="verrou-fond" id="verrou" hidden><form class="verrou" id="verrou-form">
   <div class="bascule" role="group" aria-label="Langue / Language"><button type="button" class="lang-choice" data-lang="fr" lang="fr">Français</button><button type="button" class="lang-choice" data-lang="en" lang="en">English</button></div>
   <h2 id="verrou-titre"></h2><p id="verrou-expl"></p>
-  <label id="verrou-champ"><span id="verrou-l"></span><input id="verrou-code" type="password" autocomplete="off" maxlength="60"></label>
+  <label id="verrou-champ"><span id="verrou-l"></span><span class="mdp-champ"><input id="verrou-code" type="password" autocomplete="off" maxlength="60"><button type="button" class="oeil" id="verrou-code-oeil" aria-controls="verrou-code" aria-pressed="false"></button></span></label>
   <p class="ident-erreur" id="verrou-erreur" role="alert" hidden></p>
   <button type="submit" id="verrou-ok"></button>
 </form></div>
@@ -777,7 +780,7 @@ const UI={
   notifications:'Notifications',toutLu:'Tout marquer comme lu',aucuneNotif:'Aucune notification.',
   nMention:'{n} a mentionné votre nom dans la discussion de {comp}.',nDecisionMaintenu:'{n} a maintenu le lien {l} ({comp}), contre lequel vous avez voté.',nDecisionRetrait:'{n} a retiré le lien {l} ({comp}), contre lequel vous avez voté.',
   nAdopte:"{n} a adopté votre proposition : {l} ({comp}).",nClasse:"{n} n'a pas retenu votre proposition : {l} ({comp}).",nRemis:'Le lien {l} ({comp}) est remis : votre vote compte de nouveau.',
-  sIdentifier:'👤 Se connecter',deconnecter:'Se déconnecter',creerTitre:'Créer un compte',connecterTitre:'Se connecter',monCompte:'Mon compte',roleAdmin:'administrateur',identExpl:"Votre nom et votre centre sont visibles par les membres du groupe. Votre courriel n'est vu que par la personne responsable du projet : il sert à vous reconnaître quand vous revenez et à vous écrire au sujet du projet. Ces renseignements sont compilés dans une feuille Google à accès privé, et ils seront effacés à la fin du projet.",compteActif:'Compte actif :',identNom:'Votre nom',identCourriel:'Votre courriel',identCentre:'Pour quel centre?',choisirCentre:'— Choisir votre centre —',ajouterCentre:'Ajouter un centre…',nomCentre:'Nom du centre',identMdp:'Mot de passe administrateur',montrerMdp:'Afficher le mot de passe',cacherMdp:'Masquer le mot de passe',creer:'Créer mon compte',connecter:'Se connecter',
+  sIdentifier:'👤 Se connecter',deconnecter:'Se déconnecter',creerTitre:'Créer un compte',connecterTitre:'Se connecter',monCompte:'Mon compte',roleAdmin:'administrateur',identExpl:"Votre nom et votre centre sont visibles par les membres du groupe. Votre courriel n'est vu que par la personne responsable du projet : il sert à vous reconnaître quand vous revenez et à vous écrire au sujet du projet. Ces renseignements sont compilés dans une feuille Google à accès privé, et ils seront effacés à la fin du projet.",compteActif:'Compte actif :',identNom:'Votre nom',identCourriel:'Votre courriel',identCentre:'Pour quel centre?',choisirCentre:'— Choisir votre centre —',ajouterCentre:'Ajouter un centre…',nomCentre:'Nom du centre',identMdp:'Mot de passe administrateur',montrerMdp:'Afficher le mot de passe',cacherMdp:'Masquer le mot de passe',montrerCode:'Afficher le code',cacherCode:'Masquer le code',creer:'Créer mon compte',connecter:'Se connecter',
   eNom:'Ce courriel est déjà associé à un autre nom. Entrez le nom utilisé à la création du compte.',eCourriel:"Ce courriel n'est pas valide.",eCentre:'Choisissez votre centre.',eReseau:'Impossible de joindre la feuille Google. Réessayez dans un moment.',eMdpRequis:'Ce compte est un compte administrateur : entrez son mot de passe.',eMdp:'Mot de passe refusé.',
   verrouTitre:'DEP 5319 — Outil de concordance',verrouExpl:"Cet outil est réservé à la communauté de pratique. Entrez le code d'accès reçu avec votre invitation.",verrouCode:"Code d'accès",verrouOk:"Ouvrir l'outil",verrouRefuse:"Code d'accès refusé.",verrouReseau:'Impossible de joindre la feuille Google. Vérifiez votre connexion, puis réessayez.',verrouChargement:'Chargement…',reessayer:'Réessayer',
   sOk:'✓ À jour',sEnvoi:'Enregistrement…',sChargement:'Chargement…',sErreur:'⚠ Non enregistré',sTitreFeuille:"Les modifications sont enregistrées dans la feuille Google partagée de l'équipe.",
@@ -812,7 +815,7 @@ const UI={
   notifications:'Notifications',toutLu:'Mark all as read',aucuneNotif:'No notifications.',
   nMention:'{n} mentioned you in the {comp} discussion.',nDecisionMaintenu:'{n} kept the link {l} ({comp}), which you voted against.',nDecisionRetrait:'{n} removed the link {l} ({comp}), which you voted against.',
   nAdopte:"{n} adopted your proposal: {l} ({comp}).",nClasse:"{n} did not retain your proposal: {l} ({comp}).",nRemis:'The link {l} ({comp}) is back: your vote counts again.',
-  sIdentifier:'👤 Sign in',deconnecter:'Sign out',creerTitre:'Create an account',connecterTitre:'Sign in',monCompte:'My account',roleAdmin:'administrator',identExpl:'Your name and centre are visible to the members of the group. Your email is seen only by the project lead: it is used to recognize you when you come back and to write to you about the project. This information is kept in a private Google Sheet and will be deleted at the end of the project.',compteActif:'Active account:',identNom:'Your name',identCourriel:'Your email',identCentre:'Which centre?',choisirCentre:'— Choose your centre —',ajouterCentre:'Add a centre…',nomCentre:'Centre name',identMdp:'Administrator password',montrerMdp:'Show password',cacherMdp:'Hide password',creer:'Create my account',connecter:'Sign in',
+  sIdentifier:'👤 Sign in',deconnecter:'Sign out',creerTitre:'Create an account',connecterTitre:'Sign in',monCompte:'My account',roleAdmin:'administrator',identExpl:'Your name and centre are visible to the members of the group. Your email is seen only by the project lead: it is used to recognize you when you come back and to write to you about the project. This information is kept in a private Google Sheet and will be deleted at the end of the project.',compteActif:'Active account:',identNom:'Your name',identCourriel:'Your email',identCentre:'Which centre?',choisirCentre:'— Choose your centre —',ajouterCentre:'Add a centre…',nomCentre:'Centre name',identMdp:'Administrator password',montrerMdp:'Show password',cacherMdp:'Hide password',montrerCode:'Show code',cacherCode:'Hide code',creer:'Create my account',connecter:'Sign in',
   eNom:'This email is already linked to another name. Enter the name used when the account was created.',eCourriel:'This email is not valid.',eCentre:'Choose your centre.',eReseau:'Unable to reach the Google Sheet. Try again in a moment.',eMdpRequis:'This is an administrator account: enter its password.',eMdp:'Password refused.',
   verrouTitre:'DVS 5819 — Cross-reference tool',verrouExpl:'This tool is reserved for the community of practice. Enter the access code you received with your invitation.',verrouCode:'Access code',verrouOk:'Open the tool',verrouRefuse:'Access code refused.',verrouReseau:'Unable to reach the Google Sheet. Check your connection, then try again.',verrouChargement:'Loading…',reessayer:'Retry',
   sOk:'✓ Up to date',sEnvoi:'Saving…',sChargement:'Loading…',sErreur:'⚠ Not saved',sTitreFeuille:"Changes are saved to the team's shared Google Sheet.",
@@ -823,13 +826,6 @@ const UI={
 // remettre aux participants : les deux disent la même chose.
 const AIDE={
  fr:`<p>L'outil met côte à côte le <b>programme d'études</b> (à gauche) et le <b>référentiel d'évaluation</b> (à droite), et relie chaque critère d'évaluation aux éléments de compétence qu'il évalue. Les administrateurs tiennent la <b>concordance</b>, l'ensemble de ces liens. Vous pouvez voter, en discuter et proposer des changements.</p>
-<h3>Pour commencer</h3>
-<ol>
-<li>Ouvrez l'outil et entrez le <b>code d'accès</b> reçu avec votre invitation. Votre navigateur s'en souviendra.</li>
-<li>L'outil demande ensuite votre nom et votre courriel. La première fois, il vous demande aussi votre centre, sur le même écran, et le bouton devient <b>Créer mon compte</b>. Si votre centre n'est pas dans la liste, choisissez <b>Ajouter un centre…</b> et écrivez son nom. Votre nom et votre centre sont visibles par le groupe; votre courriel ne l'est pas.</li>
-<li>Dans un autre navigateur, entrez le même nom et le même courriel : vous retrouvez votre compte.</li>
-<li>Sur un ordinateur partagé, cliquez sur votre nom (👤) puis sur <b>Se déconnecter</b> quand vous avez terminé : l'outil revient à la page de connexion.</li>
-</ol>
 <h3>L'écran</h3>
 <ul>
 <li>L'accueil présente les 19 compétences. Cliquez sur une carte pour ouvrir la compétence.</li>
@@ -887,13 +883,6 @@ const AIDE={
 <li>Pour toute question, écrivez dans la discussion ou à <a href="mailto:{courriel}">{courriel}</a>.</li>
 </ul>`,
  en:`<p>The tool places the <b>Program of Study</b> (left) and the <b>Specifications for Evaluation</b> (right) side by side, and links each evaluation criterion to the competency elements it evaluates. The administrators maintain the <b>cross-reference</b>, the set of these links. You can vote on them, discuss them and propose changes.</p>
-<h3>Getting started</h3>
-<ol>
-<li>Open the tool and enter the <b>access code</b> you received with your invitation. Your browser will remember it.</li>
-<li>The tool then asks for your name and email. The first time, it also asks for your centre, on the same screen, and the button becomes <b>Create my account</b>. If your centre is not in the list, choose <b>Add a centre…</b> and type its name. Your name and centre are visible to the group; your email is not.</li>
-<li>In another browser, enter the same name and email: you get your account back.</li>
-<li>On a shared computer, click your name (👤) then <b>Sign out</b> when you are done: the tool returns to the sign-in page.</li>
-</ol>
 <h3>The screen</h3>
 <ul>
 <li>The home page shows the 19 competencies. Click a card to open the competency.</li>
@@ -1051,15 +1040,19 @@ function monter(host){
     $('verrou-titre').textContent=U('verrouTitre');$('verrou-expl').textContent=U('verrouExpl');$('verrou-l').textContent=U('verrouCode');$('verrou-ok').textContent=U('verrouOk');
     updateUndoBtn();
   }
-  // L'œil du mot de passe d'administrateur : œil ouvert pour afficher, œil barré pour masquer.
+  // L'œil d'un champ masqué (code d'accès, mot de passe d'administrateur) : œil ouvert pour afficher, œil barré pour masquer.
   const OEIL='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const OEIL_BARRE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.9 5.2A9.8 9.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>';
+  const CHAMPS_OEIL={'verrou-code':['montrerCode','cacherCode'],'ident-mdp':['montrerMdp','cacherMdp']};
   function majOeil(){
-    const vu=$('ident-mdp').type==='text',b=$('ident-mdp-oeil'),t=U(vu?'cacherMdp':'montrerMdp');
-    b.innerHTML=vu?OEIL_BARRE:OEIL;b.title=t;b.setAttribute('aria-label',t);b.setAttribute('aria-pressed',String(vu));
+    Object.entries(CHAMPS_OEIL).forEach(([id,[montrer,cacher]])=>{
+      const vu=$(id).type==='text',b=$(id+'-oeil'),t=U(vu?cacher:montrer);
+      b.innerHTML=vu?OEIL_BARRE:OEIL;b.title=t;b.setAttribute('aria-label',t);b.setAttribute('aria-pressed',String(vu));
+    });
   }
-  function montrerMdp(vu){$('ident-mdp').type=vu?'text':'password';majOeil();}
-  $('ident-mdp-oeil').addEventListener('click',()=>{const i=$('ident-mdp'),fin=i.value.length;montrerMdp(i.type==='password');i.focus();try{i.setSelectionRange(fin,fin);}catch(e){}});
+  function montrerChamp(id,vu){$(id).type=vu?'text':'password';majOeil();}
+  function montrerMdp(vu){montrerChamp('ident-mdp',vu);}
+  Object.keys(CHAMPS_OEIL).forEach(id=>$(id+'-oeil').addEventListener('click',()=>{const i=$(id),fin=i.value.length;montrerChamp(id,i.type==='password');i.focus();try{i.setSelectionRange(fin,fin);}catch(e){}}));
   function setLang(l){lang=l;garder('lang',l);applyUI();if(!$('ident').hidden)modeIdentite(modeIdent);if(COMP_ORDER.length)render();}
 
   // ---- Données partagées (feuille Google) ou locales (ce navigateur) ----
@@ -1160,7 +1153,7 @@ function monter(host){
     $('verrou-erreur').hidden=!(motif==='verrouRefuse'||motif==='verrouReseau'||motif==='verrouChargement');
     $('verrou-erreur').textContent=motif==='verrouCode'?'':U(motif);
     $('verrou-erreur').style.color=motif==='verrouChargement'?'var(--fg-muted)':'';
-    if(champ){$('verrou-code').value='';setTimeout(()=>$('verrou-code').focus(),0);}
+    if(champ){$('verrou-code').value='';montrerChamp('verrou-code',false);setTimeout(()=>$('verrou-code').focus(),0);}
     if(motif==='verrouRefuse'||motif==='verrouCode')pret=false;
   }
   function afficherContenu(){
