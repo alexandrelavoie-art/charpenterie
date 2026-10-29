@@ -54,7 +54,8 @@ button,input,textarea{font-family:inherit}
 /* Accueil : choix parmi les 19 compétences */
 .landing{position:relative;background:var(--page-bg);flex:1;overflow-y:auto;padding:20px 16px 28px;}
 /* Accueil : « Membres » en haut à gauche (dans la rangée des outils sur un écran étroit) */
-.membres-accueil{position:absolute;top:20px;left:16px;display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:5px;padding:5px 12px;cursor:pointer;}
+.accueil-pages{position:absolute;top:20px;left:16px;display:flex;gap:8px;}
+.membres-accueil{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:5px;padding:5px 12px;cursor:pointer;}
 .membres-accueil svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .landing-inner{max-width:1100px;margin:0 auto;text-align:center;}
 .landing-outils{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
@@ -424,6 +425,14 @@ button,select{font-family:inherit;}
 /* Liste « À traiter » */
 .page-traiter{flex:1;overflow-y:auto;padding:18px 20px 30px;}
 .page-traiter h2{font-size:16px;margin-bottom:4px;}
+/* Mode d'emploi : une colonne de lecture */
+.aide{max-width:720px;font-size:13.5px;line-height:1.55;color:var(--fg);}
+.aide h3{font-size:14px;margin:20px 0 6px;}
+.aide p{margin:0 0 8px;}
+.aide ul,.aide ol{margin:0 0 8px;padding-left:22px;}
+.aide li{margin-bottom:4px;}
+.aide a{color:var(--accent);}
+.aide .nw{white-space:nowrap;}
 .section-t{margin-bottom:20px;max-width:1150px;}
 .section-t h3{font-size:13px;margin-bottom:4px;}
 .ligne-t{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 12px;align-items:start;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;padding:8px 12px;margin-bottom:6px;font-size:12.5px;}
@@ -477,7 +486,7 @@ button,select{font-family:inherit;}
 .verrou,.modal{margin:auto;}
 /* Colonne étroite : l'encadré, presque sans marge, commence sous le bandeau DEV. */
 @container (max-width:860px){.bandeau-dev:not([hidden])~.voile{top:18px;}}
-@container (max-width:760px){.membres-accueil{position:static;}}
+@container (max-width:760px){.accueil-pages{position:static;}}
 @container (max-width:900px){
   /* Le menu de gauche se superpose au contenu, avec un voile; il est fermé à l'ouverture d'une compétence. */
   .left-nav{position:absolute;top:0;bottom:0;left:0;z-index:60;box-shadow:4px 0 16px rgba(0,0,0,.18);width:min(300px,86cqw);}
@@ -643,7 +652,7 @@ const GABARIT=`<div class="racine">
 
 <div id="landing" class="landing">
   <div class="landing-inner">
-    <div class="landing-outils"><button type="button" class="membres-accueil" id="landing-membres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18.5 14.3c1.8.8 3 2.9 3 5.7"/></svg><span id="landing-membres-l"></span></button><div class="lang-choices"><button class="lang-choice" data-lang="fr">Français</button><button class="lang-choice" data-lang="en">English</button></div><button class="ident-btn ident-accueil"></button></div>
+    <div class="landing-outils"><div class="accueil-pages"><button type="button" class="membres-accueil" id="landing-membres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18.5 14.3c1.8.8 3 2.9 3 5.7"/></svg><span id="landing-membres-l"></span></button><button type="button" class="membres-accueil" id="landing-aide"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.3-2.6 3.9"/><path d="M12 17.2h.01"/></svg><span id="landing-aide-l"></span></button></div><div class="lang-choices"><button class="lang-choice" data-lang="fr">Français</button><button class="lang-choice" data-lang="en">English</button></div><button class="ident-btn ident-accueil"></button></div>
     <h1 id="landing-title"></h1>
     <p id="landing-tag"></p>
     <div class="comp-grille" id="comp-grille"></div>
@@ -677,6 +686,7 @@ const GABARIT=`<div class="racine">
     <nav class="left-nav" id="left-nav">
       <button class="nav-home" id="nav-home"></button>
       <button class="nav-home" id="nav-membres"></button>
+      <button class="nav-home" id="nav-aide"></button>
       <div class="nav-divider"></div>
       <div class="nav-label" id="nav-label-comp"></div>
       <div id="nav-comps"></div>
@@ -690,6 +700,7 @@ const GABARIT=`<div class="racine">
       </div>
       <div class="page-traiter" id="page-traiter" hidden></div>
       <div class="page-traiter" id="page-membres" hidden></div>
+      <div class="page-traiter" id="page-aide" hidden></div>
       <div class="fil" id="fil">
         <div class="fil-barre">
           <button class="comp-nav" id="fil-prev"></button>
@@ -762,7 +773,7 @@ const UI={
   traiterS1:'Liens contestés',
   traiterS2:"Ajouts proposés",
   traiterVide:'Rien à traiter pour le moment.',ajoutePar:"ajout proposé par {c}",fermer:'Fermer',encMaitre:'Votes :',encHors:'Lien retiré',encAjout:'Ajout proposé',encPar:'par {c}',encAttente:"en attente d'une décision des administrateurs",encVide:'Aucun geste ni commentaire sur ce lien.',classeCourt:"non retenue",
-  membres:'Membres',sansCentre:'Sans centre',nCompte:'{n} compte',nComptes:'{n} comptes',renommer:'Renommer',fusionnerAvec:'Fusionner avec…',fusionner:'Fusionner',confirmerFusion:'Fusionner « {a} » dans « {b} »?',supprimerMembre:'Supprimer ce compte et ses traces',confirmerSupprMembre:'Supprimer le compte de « {n} »{c}?',tracesSuppr:"Traces effacées aussi : {l}.",aucuneTrace:"Ce compte n'a laissé aucune trace.",definitif:'Ce geste est définitif.',n1Message:'1 message',nMessages:'{n} messages',n1Vote:'1 vote',nVotes:'{n} votes',n1Prop:"1 proposition d'ajout",nProps:"{n} propositions d'ajout",et:'et',eCompteAdmin:"Un compte d'administrateur ne se supprime pas ici.",centresTitre:'Centres',comptesTitre:'Comptes',colNom:'Nom',colCentre:'Centre',colInscription:'Inscription',colPour:'Votes pour',colContre:'Votes contre',colComm:'Commentaires',colAjouts:'Ajouts',colActions:'Actions',fusionnerDans:'Fusionner dans…',confirmerFusionCompte:'Fusionner le compte de « {a} » dans celui de « {b} »? Ses votes, ses messages et ses propositions passent à « {b} », puis son compte est supprimé.',promouvoir:'Promouvoir administrateur',promouvoirBtn:'Promouvoir',retirerRole:"Retirer le rôle d'administrateur",retirerRoleBtn:'Retirer le rôle',confirmerPromo:'« {n} » devient administrateur, avec le mot de passe commun des administrateurs. Transmettez-le-lui par courriel.',confirmerRetraitRole:"Retirer le rôle d'administrateur à « {n} »?",retirerCentre:'Retirer',retirerCentreTip:'Retirer ce centre vide de la liste',eCentreOccupe:'Ce centre a encore des comptes.',eRefuse:'Ce geste est refusé pour ce compte.',participantRetire:'participant retiré',eDoublon:'Un autre centre porte déjà ce nom.',
+  membres:'Membres',aide:"Mode d'emploi",sansCentre:'Sans centre',nCompte:'{n} compte',nComptes:'{n} comptes',renommer:'Renommer',fusionnerAvec:'Fusionner avec…',fusionner:'Fusionner',confirmerFusion:'Fusionner « {a} » dans « {b} »?',supprimerMembre:'Supprimer ce compte et ses traces',confirmerSupprMembre:'Supprimer le compte de « {n} »{c}?',tracesSuppr:"Traces effacées aussi : {l}.",aucuneTrace:"Ce compte n'a laissé aucune trace.",definitif:'Ce geste est définitif.',n1Message:'1 message',nMessages:'{n} messages',n1Vote:'1 vote',nVotes:'{n} votes',n1Prop:"1 proposition d'ajout",nProps:"{n} propositions d'ajout",et:'et',eCompteAdmin:"Un compte d'administrateur ne se supprime pas ici.",centresTitre:'Centres',comptesTitre:'Comptes',colNom:'Nom',colCentre:'Centre',colInscription:'Inscription',colPour:'Votes pour',colContre:'Votes contre',colComm:'Commentaires',colAjouts:'Ajouts',colActions:'Actions',fusionnerDans:'Fusionner dans…',confirmerFusionCompte:'Fusionner le compte de « {a} » dans celui de « {b} »? Ses votes, ses messages et ses propositions passent à « {b} », puis son compte est supprimé.',promouvoir:'Promouvoir administrateur',promouvoirBtn:'Promouvoir',retirerRole:"Retirer le rôle d'administrateur",retirerRoleBtn:'Retirer le rôle',confirmerPromo:'« {n} » devient administrateur, avec le mot de passe commun des administrateurs. Transmettez-le-lui par courriel.',confirmerRetraitRole:"Retirer le rôle d'administrateur à « {n} »?",retirerCentre:'Retirer',retirerCentreTip:'Retirer ce centre vide de la liste',eCentreOccupe:'Ce centre a encore des comptes.',eRefuse:'Ce geste est refusé pour ce compte.',participantRetire:'participant retiré',eDoublon:'Un autre centre porte déjà ce nom.',
   notifications:'Notifications',toutLu:'Tout marquer comme lu',aucuneNotif:'Aucune notification.',
   nMention:'{n} a mentionné votre nom dans la discussion de {comp}.',nDecisionMaintenu:'{n} a maintenu le lien {l} ({comp}), contre lequel vous avez voté.',nDecisionRetrait:'{n} a retiré le lien {l} ({comp}), contre lequel vous avez voté.',
   nAdopte:"{n} a adopté votre proposition : {l} ({comp}).",nClasse:"{n} n'a pas retenu votre proposition : {l} ({comp}).",nRemis:'Le lien {l} ({comp}) est remis : votre vote compte de nouveau.',
@@ -797,7 +808,7 @@ const UI={
   traiterS1:'Contested links',
   traiterS2:"Proposed additions",
   traiterVide:'Nothing to review for now.',ajoutePar:"addition proposed by {c}",fermer:'Close',encMaitre:'Votes:',encHors:'Link removed',encAjout:'Proposed addition',encPar:'by {c}',encAttente:'awaiting a decision by the administrators',encVide:'No changes or comments on this link.',classeCourt:"not retained",
-  membres:'Members',sansCentre:'No centre',nCompte:'{n} account',nComptes:'{n} accounts',renommer:'Rename',fusionnerAvec:'Merge with…',fusionner:'Merge',confirmerFusion:'Merge "{a}" into "{b}"?',supprimerMembre:'Delete this account and its traces',confirmerSupprMembre:'Delete the account of "{n}"{c}?',tracesSuppr:'Traces also deleted: {l}.',aucuneTrace:'This account left no traces.',definitif:'This cannot be undone.',n1Message:'1 message',nMessages:'{n} messages',n1Vote:'1 vote',nVotes:'{n} votes',n1Prop:'1 proposed addition',nProps:'{n} proposed additions',et:'and',eCompteAdmin:'An administrator account cannot be deleted here.',centresTitre:'Centres',comptesTitre:'Accounts',colNom:'Name',colCentre:'Centre',colInscription:'Joined',colPour:'Votes for',colContre:'Votes against',colComm:'Comments',colAjouts:'Additions',colActions:'Actions',fusionnerDans:'Merge into…',confirmerFusionCompte:'Merge the account of "{a}" into that of "{b}"? Its votes, messages and proposals move to "{b}", then the account is deleted.',promouvoir:'Make administrator',promouvoirBtn:'Promote',retirerRole:'Remove the administrator role',retirerRoleBtn:'Remove role',confirmerPromo:'"{n}" becomes an administrator, with the administrators\' shared password. Send it to them by email.',confirmerRetraitRole:'Remove the administrator role from "{n}"?',retirerCentre:'Remove',retirerCentreTip:'Remove this empty centre from the list',eCentreOccupe:'This centre still has accounts.',eRefuse:'This action is not allowed for this account.',participantRetire:'former participant',eDoublon:'Another centre already has this name.',
+  membres:'Members',aide:'How to use',sansCentre:'No centre',nCompte:'{n} account',nComptes:'{n} accounts',renommer:'Rename',fusionnerAvec:'Merge with…',fusionner:'Merge',confirmerFusion:'Merge "{a}" into "{b}"?',supprimerMembre:'Delete this account and its traces',confirmerSupprMembre:'Delete the account of "{n}"{c}?',tracesSuppr:'Traces also deleted: {l}.',aucuneTrace:'This account left no traces.',definitif:'This cannot be undone.',n1Message:'1 message',nMessages:'{n} messages',n1Vote:'1 vote',nVotes:'{n} votes',n1Prop:'1 proposed addition',nProps:'{n} proposed additions',et:'and',eCompteAdmin:'An administrator account cannot be deleted here.',centresTitre:'Centres',comptesTitre:'Accounts',colNom:'Name',colCentre:'Centre',colInscription:'Joined',colPour:'Votes for',colContre:'Votes against',colComm:'Comments',colAjouts:'Additions',colActions:'Actions',fusionnerDans:'Merge into…',confirmerFusionCompte:'Merge the account of "{a}" into that of "{b}"? Its votes, messages and proposals move to "{b}", then the account is deleted.',promouvoir:'Make administrator',promouvoirBtn:'Promote',retirerRole:'Remove the administrator role',retirerRoleBtn:'Remove role',confirmerPromo:'"{n}" becomes an administrator, with the administrators\' shared password. Send it to them by email.',confirmerRetraitRole:'Remove the administrator role from "{n}"?',retirerCentre:'Remove',retirerCentreTip:'Remove this empty centre from the list',eCentreOccupe:'This centre still has accounts.',eRefuse:'This action is not allowed for this account.',participantRetire:'former participant',eDoublon:'Another centre already has this name.',
   notifications:'Notifications',toutLu:'Mark all as read',aucuneNotif:'No notifications.',
   nMention:'{n} mentioned you in the {comp} discussion.',nDecisionMaintenu:'{n} kept the link {l} ({comp}), which you voted against.',nDecisionRetrait:'{n} removed the link {l} ({comp}), which you voted against.',
   nAdopte:"{n} adopted your proposal: {l} ({comp}).",nClasse:"{n} did not retain your proposal: {l} ({comp}).",nRemis:'The link {l} ({comp}) is back: your vote counts again.',
@@ -806,6 +817,139 @@ const UI={
   verrouTitre:'DVS 5819 — Cross-reference tool',verrouExpl:'This tool is reserved for the community of practice. Enter the access code you received with your invitation.',verrouCode:'Access code',verrouOk:'Open the tool',verrouRefuse:'Access code refused.',verrouReseau:'Unable to reach the Google Sheet. Check your connection, then try again.',verrouChargement:'Loading…',reessayer:'Retry',
   sOk:'✓ Up to date',sEnvoi:'Saving…',sChargement:'Loading…',sErreur:'⚠ Not saved',sTitreFeuille:"Changes are saved to the team's shared Google Sheet.",
   bReseau:'Unable to reach the Google Sheet: the last change may not have been saved.',bCompte:'Your account cannot be found in the sheet: sign in again.',bAdmin:'Administrator password refused: sign in again.',bRecent:"A more recent change by another administrator on this link prevents the undo."}
+};
+
+// « Mode d'emploi » des participants, en HTML. {courriel} : l'adresse de soutien. MODE-D-EMPLOI.md en est la version à
+// remettre aux participants : les deux disent la même chose.
+const AIDE={
+ fr:`<p>L'outil met côte à côte le <b>programme d'études</b> (à gauche) et le <b>référentiel d'évaluation</b> (à droite), et relie chaque critère d'évaluation aux éléments de compétence qu'il évalue. Les administrateurs tiennent la <b>concordance</b>, l'ensemble de ces liens. Vous pouvez voter, en discuter et proposer des changements.</p>
+<h3>Pour commencer</h3>
+<ol>
+<li>Ouvrez l'outil et entrez le <b>code d'accès</b> reçu avec votre invitation. Votre navigateur s'en souviendra.</li>
+<li>L'outil demande ensuite votre nom et votre courriel. La première fois, il vous demande aussi votre centre, sur le même écran, et le bouton devient <b>Créer mon compte</b>. Si votre centre n'est pas dans la liste, choisissez <b>Ajouter un centre…</b> et écrivez son nom. Votre nom et votre centre sont visibles par le groupe; votre courriel ne l'est pas.</li>
+<li>Dans un autre navigateur, entrez le même nom et le même courriel : vous retrouvez votre compte.</li>
+<li>Sur un ordinateur partagé, cliquez sur votre nom (👤) puis sur <b>Se déconnecter</b> quand vous avez terminé : l'outil revient à la page de connexion.</li>
+</ol>
+<h3>L'écran</h3>
+<ul>
+<li>L'accueil présente les 19 compétences. Cliquez sur une carte pour ouvrir la compétence.</li>
+<li>Le <b>programme d'études</b> est à gauche, le <b>référentiel d'évaluation</b> à droite. En bas de l'écran, <b class="nw">‹ C2</b> et <b class="nw">C4 ›</b> mènent à la compétence voisine.</li>
+<li><b>☰</b> ouvre la liste des compétences, la page <b>Membres</b> et ce mode d'emploi.</li>
+<li>La case <b>Liens</b>, en haut, affiche ou masque les pastilles qui relient un document à l'autre.</li>
+</ul>
+<h3>Lire un lien</h3>
+<p>Sous chaque critère d'évaluation, une pastille par élément relié (<span class="nw">Él.2, Él.3…</span>). Survolez-la pour lire l'élément. Dans le programme, les éléments reliés à au moins un critère sont mis en relief.</p>
+<ul>
+<li><b>Pastille pâle, en pointillés :</b> un ajout proposé par un participant. Survolez-la pour savoir qui l'a proposé et pourquoi.</li>
+</ul>
+<p>Cliquez sur une pastille pour ouvrir l'encadré du lien : tout ce qui le concerne, dans l'ordre. L'encadré donne aussi le critère avec sa pondération (« 10 pts », ou « Oui / Non ») et ses sous-critères, l'élément avec ses précisions, et le nom des personnes qui ont voté pour ou contre. Côté programme, une pastille de critère (<span class="nw">CE-03…</span>) ouvre l'encadré du même lien.</p>
+<h3>Voter</h3>
+<p>À côté de chaque pastille, celles de la concordance comme les ajouts proposés :</p>
+<ul>
+<li><b>👍</b> : vous êtes pour. Un second clic retire votre vote.</li>
+<li><b>👎</b> : vous êtes contre. Écrivez une raison d'une ligne : elle s'affiche dans la discussion de la compétence. Retirer votre vote la retire aussi.</li>
+</ul>
+<p>Votre propre vote est le pouce coloré. Le chiffre du 👎 est <b>rouge</b> tant que les administrateurs n'ont pas tranché, gris ensuite. Survolez les pouces, ou ouvrez l'encadré du lien, pour voir qui a voté.</p>
+<h3>Proposer un ajout</h3>
+<ol>
+<li>Cliquez sur le <b>+</b> au bout de la rangée de pastilles d'un critère : le programme passe en mode ajout, en violet, et chaque élément que vous pouvez proposer porte la mention « Cliquer ici pour proposer l'ajout ».</li>
+<li>Cliquez sur l'élément à ajouter, écrivez la raison sur sa fiche, en une ligne, puis cliquez sur <b>Proposer</b>. Le chevron ▼ d'un élément affiche ses précisions sans le choisir.</li>
+<li>L'ajout proposé apparaît pour tous en pastille pâle, avec votre 👍. Tout le monde peut voter dessus.</li>
+</ol>
+<p>Si un ajout est déjà proposé, appuyez-le d'un 👍 plutôt que de le proposer de nouveau. Pour retirer votre proposition, retirez votre 👍 : si personne d'autre ne l'appuie, elle disparaît. Pour qu'un lien existant soit retiré, votez contre.</p>
+<p>Les administrateurs peuvent <b>adopter</b> un ajout proposé (la concordance change) ou <b>ne pas le retenir</b> : il reste alors visible, avec la mention « non retenue ».</p>
+<h3>Discuter</h3>
+<ul>
+<li>La languette <b>💬 Discussion</b>, en bas de l'écran, déploie ou escamote la discussion de la compétence. Elle réunit tout ce qui s'y passe, dans l'ordre : les messages, et chaque geste en ligne discrète avec l'étiquette du lien (vote contre, proposition, décision des administrateurs). La raison qui accompagne un geste le suit.</li>
+<li>Tapez <b>@</b> suivi d'un nom pour mentionner quelqu'un. La personne en sera avisée. Ctrl+Entrée envoie le message.</li>
+<li>Au survol de vos propres messages, <b>✎</b> les modifie et <b>🗑</b> les supprime. Sur un téléphone ou une tablette, ces deux icônes restent affichées.</li>
+</ul>
+<h3>Le programme et le référentiel</h3>
+<ul>
+<li>Chaque document ouvert porte une languette à sa couleur sur son bord extérieur : <b>‹</b>, à gauche du programme, le referme; <b>›</b>, à droite du référentiel, le referme aussi. L'autre document prend alors toute la largeur.</li>
+<li>Le document refermé devient une languette étroite, sur le bord de l'écran, qui porte son nom : cliquez dessus pour le rouvrir.</li>
+<li>Le <b>+</b> rouvre le programme au besoin.</li>
+</ul>
+<h3>Sur un téléphone ou une tablette</h3>
+<ul>
+<li>Sur un écran étroit, le programme et le référentiel s'affichent l'un sous l'autre. Touchez le titre d'un document pour le replier, puis de nouveau pour le déplier.</li>
+<li>Sur un téléphone, <b>⋮</b>, en haut à droite, donne votre nom (👤), <b>EN</b> et le bouton du thème.</li>
+<li>Il n'y a pas de survol : touchez une pastille pour ouvrir l'encadré du lien.</li>
+<li>Après un toucher sur <b>+</b>, l'écran descend jusqu'au programme, où vous choisissez l'élément.</li>
+</ul>
+<h3>Membres</h3>
+<p>La page <b>Membres</b> montre tous les membres, regroupés par centre. Elle s'ouvre par le bouton <b>Membres</b>, en haut à gauche de l'accueil, ou par <b>☰</b>.</p>
+<h3>Notifications</h3>
+<p>La cloche <b>🔔</b> compte ce qui vous concerne : une mention de votre nom, une décision sur un lien contre lequel vous avez voté, ce qui arrive à vos propositions.</p>
+<h3>En cas de pépin</h3>
+<ul>
+<li>Si l'outil affiche « ⚠ Non enregistré », vérifiez votre connexion et cliquez sur <b>Réessayer</b>.</li>
+<li>Pour toute question, écrivez dans la discussion ou à <a href="mailto:{courriel}">{courriel}</a>.</li>
+</ul>`,
+ en:`<p>The tool places the <b>Program of Study</b> (left) and the <b>Specifications for Evaluation</b> (right) side by side, and links each evaluation criterion to the competency elements it evaluates. The administrators maintain the <b>cross-reference</b>, the set of these links. You can vote on them, discuss them and propose changes.</p>
+<h3>Getting started</h3>
+<ol>
+<li>Open the tool and enter the <b>access code</b> you received with your invitation. Your browser will remember it.</li>
+<li>The tool then asks for your name and email. The first time, it also asks for your centre, on the same screen, and the button becomes <b>Create my account</b>. If your centre is not in the list, choose <b>Add a centre…</b> and type its name. Your name and centre are visible to the group; your email is not.</li>
+<li>In another browser, enter the same name and email: you get your account back.</li>
+<li>On a shared computer, click your name (👤) then <b>Sign out</b> when you are done: the tool returns to the sign-in page.</li>
+</ol>
+<h3>The screen</h3>
+<ul>
+<li>The home page shows the 19 competencies. Click a card to open the competency.</li>
+<li>The <b>Program of Study</b> is on the left, the <b>Specifications for Evaluation</b> on the right. At the bottom of the screen, <b class="nw">‹ C2</b> and <b class="nw">C4 ›</b> lead to the neighbouring competency.</li>
+<li><b>☰</b> opens the list of competencies, the <b>Members</b> page and this guide.</li>
+<li>The <b>Links</b> box, at the top, shows or hides the badges that link one document to the other.</li>
+</ul>
+<h3>Reading a link</h3>
+<p>Under each evaluation criterion, one badge per linked element (<span class="nw">El.2, El.3…</span>). Hover over it to read the element. In the program, elements linked to at least one criterion are highlighted.</p>
+<ul>
+<li><b>Pale, dotted badge:</b> an addition proposed by a participant. Hover over it to see who proposed it and why.</li>
+</ul>
+<p>Click a badge to open the link's panel: everything about it, in order. The panel also shows the criterion with its weighting ("10 marks", or "Yes / No") and its sub-criteria, the element with its details, and the names of the people who voted for or against. On the program side, a criterion badge (<span class="nw">EC-03…</span>) opens the panel of the same link.</p>
+<h3>Voting</h3>
+<p>Next to each badge, for links in the cross-reference as well as proposed additions:</p>
+<ul>
+<li><b>👍</b>: you are for it. A second click removes your vote.</li>
+<li><b>👎</b>: you are against it. Write a one-line reason: it appears in the competency's discussion. Removing your vote removes it too.</li>
+</ul>
+<p>Your own vote is the coloured thumb. The 👎 count is <b>red</b> until the administrators have decided, grey afterwards. Hover over the thumbs, or open the link's panel, to see who voted.</p>
+<h3>Proposing an addition</h3>
+<ol>
+<li>Click the <b>+</b> at the end of a criterion's row of badges: the program switches to addition mode, in purple, and each element you can propose is marked "Click here to propose the addition".</li>
+<li>Click the element to add, write the reason on its card, in one line, then click <b>Propose</b>. An element's ▼ chevron shows its details without choosing it.</li>
+<li>The proposed addition appears for everyone as a pale badge, with your 👍. Everyone can vote on it.</li>
+</ol>
+<p>If an addition has already been proposed, support it with a 👍 rather than proposing it again. To withdraw your proposal, remove your 👍: if nobody else supports it, it disappears. To have an existing link removed, vote against it.</p>
+<p>The administrators can <b>adopt</b> a proposed addition (the cross-reference changes) or <b>not retain</b> it: it then stays visible, marked "not retained".</p>
+<h3>Discussing</h3>
+<ul>
+<li>The <b>💬 Discussion</b> tab, at the bottom of the screen, opens or closes the competency's discussion. It gathers everything that happens in it, in order: messages, and each action as a discreet line with the link's label (vote against, proposal, administrators' decision). The reason given with an action follows it.</li>
+<li>Type <b>@</b> followed by a name to mention someone. They will be notified. Ctrl+Enter sends the message.</li>
+<li>When you hover over your own messages, <b>✎</b> edits them and <b>🗑</b> deletes them. On a phone or tablet, these two icons stay visible.</li>
+</ul>
+<h3>The program and the specifications</h3>
+<ul>
+<li>Each open document has a tab in its colour on its outer edge: <b>‹</b>, left of the program, closes it; <b>›</b>, right of the specifications, closes them too. The other document then takes the full width.</li>
+<li>The closed document becomes a narrow tab on the edge of the screen, bearing its name: click it to reopen it.</li>
+<li>The <b>+</b> reopens the program when needed.</li>
+</ul>
+<h3>On a phone or tablet</h3>
+<ul>
+<li>On a narrow screen, the program and the specifications are shown one below the other. Tap a document's title to fold it, and again to unfold it.</li>
+<li>On a phone, <b>⋮</b>, at the top right, gives your name (👤), <b>FR</b> and the display button.</li>
+<li>There is no hovering: tap a badge to open the link's panel.</li>
+<li>After tapping <b>+</b>, the screen scrolls down to the program, where you choose the element.</li>
+</ul>
+<h3>Members</h3>
+<p>The <b>Members</b> page shows all members, grouped by centre. It opens from the <b>Members</b> button, at the top left of the home page, or from <b>☰</b>.</p>
+<h3>Notifications</h3>
+<p>The <b>🔔</b> bell counts what concerns you: a mention of your name, a decision on a link you voted against, what happens to your proposals.</p>
+<h3>If something goes wrong</h3>
+<ul>
+<li>If the tool shows "⚠ Not saved", check your connection and click <b>Retry</b>.</li>
+<li>For any question, write in the discussion or to <a href="mailto:{courriel}">{courriel}</a>.</li>
+</ul>`
 };
 
 // Adresse de soutien, proposée avec toute erreur de connexion au compte.
@@ -890,9 +1034,9 @@ function monter(host){
 
   function applyUI(){
     host.lang=lang;
-    $('landing-title').textContent=U('title');$('landing-membres-l').textContent=U('membres');$('landing-tag').textContent=U('tagline');
+    $('landing-title').textContent=U('title');$('landing-membres-l').textContent=U('membres');$('landing-aide-l').textContent=U('aide');$('landing-tag').textContent=U('tagline');
     $('nav-toggle').title=U('nav');$('links-label').textContent=' '+U('links');$('links-wrap').title=U('linksTip');
-    $('theme-btn').title=U('theme');$('nav-label-comp').textContent=U('comp');$('nav-home').textContent=U('home');$('nav-membres').textContent=U('membres');
+    $('theme-btn').title=U('theme');$('nav-label-comp').textContent=U('comp');$('nav-home').textContent=U('home');$('nav-membres').textContent=U('membres');$('nav-aide').textContent=U('aide');
     [['fermer-prog','fermerProg'],['fermer-ref','fermerRef']].forEach(([id,k])=>{$(id).title=U(k);$(id).setAttribute('aria-label',U(k));});
     $('poignee-prog').innerHTML=`<span>🔨 ${esc(U('prog'))}</span><span class="lang-doc prog" aria-hidden="true">›</span>`;
     $('poignee-ref').innerHTML=`<span>📋 ${esc(U('ref'))}</span><span class="lang-doc ref" aria-hidden="true">‹</span>`;
@@ -1323,10 +1467,10 @@ function monter(host){
 
   // ---- En-tête : titre, liste « À traiter », cloche ----
   function updateHeader(){
-    $('header-doc').textContent=page==='traiter'?U('traiterTitre'):page==='membres'?U('membres'):T(comp().subtitle);
+    $('header-doc').textContent=page==='traiter'?U('traiterTitre'):page==='membres'?U('membres'):page==='aide'?U('aide'):T(comp().subtitle);
     $('header-sous').hidden=!!page||comp().type!=='situation';$('header-sous').textContent=U('situ');
     R.querySelectorAll('.nav-btn[data-comp]').forEach(b=>b.classList.toggle('active',!page&&b.dataset.comp===curComp));
-    $('nav-membres').classList.toggle('active',page==='membres');
+    $('nav-membres').classList.toggle('active',page==='membres');$('nav-aide').classList.toggle('active',page==='aide');
     // Administrateurs : le nom d'une compétence qui garde des liens « probable » est en italique.
     R.querySelectorAll('.nav-btn[data-comp]').forEach(b=>{const st=estAdmin()&&etatComp(b.dataset.comp);b.classList.toggle('probable',!!st&&[...st.probable].some(k=>st.maitre[k]));});
 
@@ -1881,6 +2025,9 @@ function monter(host){
     P.innerHTML=h;
     if(estAdmin()){lierCentres(P);lierMembres(P);}
   }
+  function renderAide(){
+    $('page-aide').innerHTML=`<h2>${esc(U('aide'))}</h2><div class="aide">${AIDE[lang].split('{courriel}').join(esc(COURRIEL_SOUTIEN))}</div>`;
+  }
   function membresParCentre(tri,parNom){
     const liste=l=>`<ul class="membres">${l.slice().sort(parNom).map(p=>`<li><b>${esc(p.nom)}</b>${p.role==='administrateur'?`<span class="role">admin</span>`:''}</li>`).join('')}</ul>`;
     const titre=(nom,n)=>`<div class="ligne-c"><span class="nom-c">${esc(nom)}</span><span class="detail">${esc(U(n===1?'nCompte':'nComptes',{n}))}</span></div>`;
@@ -2115,13 +2262,14 @@ function monter(host){
     renderEncadre();
     if(!$('landing').hidden){renderAccueil();return;}
     buildNav();updateHeader();
-    const traiter=page==='traiter'&&estAdmin(),membres=page==='membres';
+    const traiter=page==='traiter'&&estAdmin(),membres=page==='membres',aide=page==='aide';
     if(page==='traiter'&&!traiter)page='';
-    $('content-row').hidden=traiter||membres;$('fil').hidden=traiter||membres;$('page-traiter').hidden=!traiter;$('page-membres').hidden=!membres;
+    $('content-row').hidden=traiter||membres||aide;$('fil').hidden=traiter||membres||aide;$('page-traiter').hidden=!traiter;$('page-membres').hidden=!membres;$('page-aide').hidden=!aide;
 
     renderNotifs();
     if(traiter){renderTraiter();return;}
     if(membres){renderMembres();return;}
+    if(aide){renderAide();return;}
     if(selectedEc&&(!vues.prog||!estAdmin()))selectedEc=null;
     if(ajoutOuvert&&(!vues.prog||!proposeur()||!ecById(ajoutOuvert)))ajoutOuvert=null;
     // Côte à côte : un document refermé devient une boîte flottante sur sa marge; la languette d'un document ouvert
@@ -2195,15 +2343,17 @@ function monter(host){
   $('nav-toggle').addEventListener('click',()=>{navOpen=!navOpen;$('left-nav').classList.toggle('collapsed',!navOpen);});
   R.querySelector('.main-area').addEventListener('click',()=>{if(navOpen&&etroit()){navOpen=false;$('left-nav').classList.add('collapsed');}});
   $('nav-home').addEventListener('click',goHome);
-  // « Membres » : depuis le menu de gauche ou depuis l'accueil.
-  function ouvrirMembres(){
-    page='membres';selectedEc=null;centreEdition=null;centreFusion=null;centreErreur=null;membreAction=null;membreErreur=null;
+  // « Membres » et « Mode d'emploi » : depuis le menu de gauche ou depuis l'accueil.
+  function ouvrirPage(p){
+    page=p;selectedEc=null;centreEdition=null;centreFusion=null;centreErreur=null;membreAction=null;membreErreur=null;
     if(etroit())navOpen=false;
     vueActive='app';$('landing').hidden=true;$('app').hidden=false;
-    render();$('page-membres').scrollTop=0;
+    render();$('page-'+p).scrollTop=0;
   }
-  $('nav-membres').addEventListener('click',ouvrirMembres);
-  $('landing-membres').addEventListener('click',ouvrirMembres);
+  $('nav-membres').addEventListener('click',()=>ouvrirPage('membres'));
+  $('landing-membres').addEventListener('click',()=>ouvrirPage('membres'));
+  $('nav-aide').addEventListener('click',()=>ouvrirPage('aide'));
+  $('landing-aide').addEventListener('click',()=>ouvrirPage('aide'));
   $('crossref-cb').addEventListener('change',ev=>{crossRef=ev.target.checked;render();});
 
   applyUI();
