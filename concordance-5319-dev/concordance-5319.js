@@ -32,12 +32,14 @@ const CSS=`
   --border:#c9c6bf;--border-soft:#dedbd4;--fg:#1a1816;--fg-muted:#6b6760;--ink:#1a1816;--accent:#1f4e8c;--accent-bg:#e4edf8;--doc-ref:#2d4f7a;--doc-prog:#8a5a1e;--hl:#fff3bf;
   --fort:#1a6335;--fort-bg:#d6f0e2;
   --probable:#7a4a08;--probable-bg:#feecc8;
+  --ajout:#6d28d9;--ajout-bg:#f3ecff;
   --nav-w:200px;color-scheme:light;}
 :host([data-theme="dark"]){
   --page-bg:#161616;--bg:#1f1f1f;--surface:#1f1f1f;--surface-2:#282828;
   --border:#444444;--border-soft:#333333;--fg:#f0f0f0;--fg-muted:#9a9a9a;--ink:#f0f0f0;--accent:#7fb0ee;--accent-bg:#172a44;--doc-ref:#9bbbe6;--doc-prog:#e0b070;--hl:#3d3516;
   --fort:#6dd492;--fort-bg:#0d2819;
   --probable:#edb644;--probable-bg:#271c05;
+  --ajout:#c4a5ff;--ajout-bg:#271a45;
   color-scheme:dark;}
 :host([hidden]){display:none}
 [hidden]{display:none!important}
@@ -104,29 +106,40 @@ button,input,textarea{font-family:inherit}
 
 .main-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
 .content-row{flex:1 1 0;display:flex;min-height:0;overflow:hidden;background:var(--page-bg);}
-/* Deux "feuilles" de même largeur, comme deux PDF côte à côte : programme à gauche, référentiel à droite. Entre les
-   deux, une barre étroite et ses flèches referment l'un ou l'autre; le document refermé devient une poignée sur sa marge. */
-.pane{flex:1 1 0;min-width:0;overflow-y:auto;padding:20px 16px 24px;}
-.barre-docs{flex:0 0 26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
-.barre-docs button{width:22px;height:30px;padding:0;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--fg-muted);font-size:15px;line-height:1;cursor:pointer;}
-.barre-docs button:hover{color:var(--fg);border-color:var(--fg-muted);}
-.poignee{flex:0 0 30px;display:flex;align-items:center;justify-content:center;padding:14px 0;border:none;border-right:1px solid var(--border);background:var(--surface-2);color:var(--doc-prog);font-size:12px;font-weight:700;cursor:pointer;}
-.poignee span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;}
-.poignee.droite{border-right:none;border-left:1px solid var(--border);color:var(--doc-ref);}
-.poignee.droite span{transform:none;}
-.poignee:hover{background:var(--surface);}
+/* Deux "feuilles" de même largeur, comme deux PDF côte à côte : programme à gauche, référentiel à droite. Chaque
+   document ouvert porte une languette à sa couleur dans sa marge extérieure, qui le referme. Le document refermé devient
+   une boîte étroite qui flotte sur sa marge, et sa languette avance vers le document ouvert. */
+.pane{flex:1 1 0;min-width:0;overflow-y:auto;padding:20px 16px 40px;}
+#pane-prog{padding-left:34px;padding-right:10px;}
+#pane-ref{padding-left:10px;padding-right:34px;}
+/* La languette suit le haut de la feuille pendant le défilement : une tenue de hauteur nulle, collée au haut du panneau. */
+.tenue{position:sticky;top:0;z-index:3;height:0;max-width:820px;margin:0 auto;}
+.lang-doc{position:absolute;top:16px;display:flex;align-items:center;justify-content:center;width:22px;height:52px;padding:0;border:none;color:var(--bg);font-size:15px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.lang-doc.prog{background:var(--doc-prog);}
+.lang-doc.ref{background:var(--doc-ref);}
+.tenue .lang-doc.prog{right:100%;border-radius:8px 0 0 8px;}
+.tenue .lang-doc.ref{left:100%;border-radius:0 8px 8px 0;}
+.lang-doc:hover{filter:brightness(1.15);}
+.poignee{position:relative;z-index:4;align-self:flex-start;flex:0 0 36px;display:flex;flex-direction:column;align-items:center;margin:20px 0 0 12px;padding:12px 0 16px;border:1px solid;border-top-width:4px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:12px;font-weight:700;cursor:pointer;}
+.poignee.gauche{background:color-mix(in srgb,var(--doc-prog) 12%,var(--surface));border-color:color-mix(in srgb,var(--doc-prog) 40%,var(--surface));border-top-color:var(--doc-prog);color:var(--doc-prog);}
+.poignee.droite{margin:20px 12px 0 0;background:color-mix(in srgb,var(--doc-ref) 12%,var(--surface));border-color:color-mix(in srgb,var(--doc-ref) 40%,var(--surface));border-top-color:var(--doc-ref);color:var(--doc-ref);}
+.poignee>span:first-child{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;}
+.poignee.droite>span:first-child{transform:none;}
+.poignee .lang-doc{top:12px;}
+.poignee.gauche .lang-doc{left:100%;border-radius:0 8px 8px 0;}
+.poignee.droite .lang-doc{right:100%;border-radius:8px 0 0 8px;}
 .sheet{background:var(--surface);border:1px solid var(--border);border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.06);max-width:820px;margin:0 auto;padding:28px 32px 40px;min-height:100%;}
 /* Mises en page selon la largeur de l'outil lui-même (pleine page ou colonne WordPress) */
-@container (max-width:860px){.content-row{flex-direction:column;overflow-y:auto;}.pane{flex:none;overflow:visible;padding:12px 12px 20px;}.sheet{padding:18px 16px 28px;}.barre-docs,.poignee{display:none!important;}.sheet.plie{min-height:0;padding-bottom:6px;}.sheet.plie .sp-header{margin-bottom:0;}}
+@container (max-width:860px){.content-row{flex-direction:column;overflow-y:auto;}.content-row{padding-bottom:28px;}.pane,#pane-prog,#pane-ref{flex:none;overflow:visible;padding:12px 12px 20px;}.sheet{padding:18px 16px 28px;}.tenue,.poignee{display:none!important;}.sheet.plie{min-height:0;padding-bottom:6px;}.sheet.plie .sp-header{margin-bottom:0;}}
 /* Les autres règles selon la largeur (tablettes, téléphones, colonne étroite) sont à la fin, après les règles de base. */
 
 /* Discussion de la compétence, sous les documents */
-.fil{flex-shrink:0;display:flex;flex-direction:column;border-top:1px solid var(--border);background:var(--surface);}
-/* La barre du bas est une poignée : un clic déploie la discussion ou l'escamote. */
-.fil-barre{position:relative;display:flex;align-items:center;gap:8px;padding:7px 10px 4px;}
-.fil-barre::before{content:"";position:absolute;top:3px;left:50%;width:36px;margin-left:-18px;height:4px;border-radius:2px;background:var(--border);pointer-events:none;}
-.poignee-fil{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:28px;border:none;background:none;color:var(--fg-muted);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
-.poignee-fil:hover,.poignee-fil.active{color:var(--fg);}
+.fil{position:relative;z-index:5;flex-shrink:0;display:flex;flex-direction:column;border-top:1px solid var(--border);background:var(--surface);}
+/* Au milieu de la barre du bas, une languette pleine monte sur les documents : un clic déploie la discussion ou
+   l'escamote. Déployée, la languette reste à son bord supérieur. */
+.fil-barre{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px;padding:2px 10px;}
+.poignee-fil{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:6px;min-height:30px;padding:0 14px;border:none;border-radius:8px 8px 0 0;background:var(--fg);color:var(--bg);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 -2px 6px rgba(0,0,0,.18);}
+.poignee-fil:hover{filter:brightness(1.3);}
 .poignee-fil .chev{font-size:10px;transition:transform .18s;}
 .poignee-fil.active .chev{transform:rotate(180deg);}
 .compte{font-family:'JetBrains Mono',monospace;font-weight:500;opacity:.8;margin-left:2px;}
@@ -219,10 +232,12 @@ button,input,textarea{font-family:inherit}
    le lot 2 la redessine.) */
 .el-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;padding:0;}
 .el-card.lie{border-color:var(--fg-muted);box-shadow:inset 3px 0 0 var(--doc-prog);}
-.el-card.disponible{border:1.5px dashed var(--accent);}
+.el-card.disponible{border:1.5px dashed var(--ajout);background:var(--ajout-bg);}
 .el-card.disponible>.el-card-top{cursor:pointer;}
-.el-card.disponible>.el-card-top:hover{background:var(--accent-bg);}
-.el-card.choisi{border:2px solid var(--accent);background:var(--accent-bg);}
+.el-card.disponible>.el-card-top:hover{background:color-mix(in srgb,var(--ajout) 14%,var(--surface));}
+.el-card.choisi{border:2px solid var(--ajout);background:var(--ajout-bg);}
+/* L'invitation se pose sur le contour du haut de la carte, sans la grandir. */
+.invite-ajout{position:absolute;top:-8px;right:30px;padding:0 6px;border-radius:3px;background:var(--surface);color:var(--ajout);font-size:11px;font-weight:600;line-height:14px;white-space:nowrap;pointer-events:none;}
 .pc-list{list-style:none;padding:0;margin:0;}
 .pc-list li{font-size:12px;color:var(--fg-muted);padding:1px 0;line-height:1.4;position:relative;}
 .pc-list li::before{content:"–";position:absolute;left:-12px;}
@@ -339,7 +354,8 @@ button,select{font-family:inherit;}
 .note-ecart{margin-top:6px;font-size:11.5px;color:var(--fg-muted);display:flex;flex-direction:column;gap:4px;cursor:default;}
 /* Le + au bout d'une rangée de pastilles; la raison d'un ajout s'écrit sur la fiche de l'élément choisi */
 .plus-ajout{border:1px dashed var(--border);background:none;color:var(--fg-muted);border-radius:3px;font-size:11.5px;font-weight:700;line-height:1.3;padding:0 6px;margin-left:2px;cursor:pointer;}
-.plus-ajout:hover,.plus-ajout.on{border-color:var(--fort);color:var(--fort);background:var(--fort-bg);}
+.plus-ajout:hover{border-color:var(--ajout);color:var(--ajout);background:var(--ajout-bg);}
+.plus-ajout.on{border:1px solid var(--ajout);color:var(--bg);background:var(--ajout);}
 .note-ecart label{display:flex;flex-direction:column;gap:2px;font-weight:600;color:var(--fg);}
 .note-ecart input{font-weight:400;border:1px solid var(--border);border-radius:3px;padding:3px 6px;background:var(--bg);color:var(--fg);font-size:12px;}
 .note-ecart .ligne{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
@@ -444,22 +460,22 @@ button,select{font-family:inherit;}
   .page-traiter{padding:14px 12px 24px;}
 }
 @container (max-width:760px){
-  /* En-tête sur deux rangées, sans défilement : ☰, le titre, la cloche et ⋮ (un menu qui porte le bouton du compte, EN
-     et le thème); puis « À traiter », 🔨 et 📋 sans leurs mots, Liens et Annuler. --reglages-w : la largeur de ⋮. */
+  /* En-tête sur une rangée : ☰, le titre, la cloche et ⋮, un menu qui porte le bouton du compte, « À traiter », Liens,
+     EN, Annuler et le thème. Le compteur d'« À traiter » se répète sur ⋮. --reglages-w : la largeur de ⋮. */
   .app-header{gap:6px 8px;padding:6px 8px;--reglages-w:32px;}
   .header-info{flex:1 1 0;min-width:0;}
   .app-header:has(.cloche:not([hidden])) .header-info{padding-right:72px;}
   .header-doc{font-size:15px;}
   .reglages{display:block;position:relative;align-self:flex-start;flex-shrink:0;}
-  #btn-reglages{width:var(--reglages-w);padding:5px 0;font-size:16px;font-weight:700;}
-  .menu-reglages{position:absolute;right:0;top:calc(100% + 6px);z-index:600;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:max-content;min-width:160px;max-width:calc(100cqw - 16px);padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.2);}
-  .menu-reglages .ident-btn{grid-column:1/-1;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:left;}
-  .header-outils{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex:1 1 100%;min-width:0;}
-  /* « À traiter » ouvre la rangée : la file de l'administrateur et son compteur. */
-  .header-actions{display:contents;}
-  .header-actions>*{flex-shrink:0;}
-  #btn-traiter{order:-1;}
-  #sync{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  #btn-reglages{position:relative;width:var(--reglages-w);padding:5px 0;font-size:16px;font-weight:700;}
+  #btn-reglages .compteur{position:absolute;top:-7px;right:-9px;margin:0;}
+  .menu-reglages{position:absolute;right:0;top:calc(100% + 6px);z-index:600;display:grid;grid-template-columns:repeat(3,auto);gap:6px;width:max-content;min-width:180px;max-width:calc(100cqw - 16px);padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.2);}
+  .menu-reglages .ident-btn,.menu-reglages #btn-traiter,.menu-reglages #links-wrap{grid-column:1/-1;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:left;}
+  .menu-reglages #links-wrap{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-size:12px;cursor:pointer;user-select:none;}
+  .menu-reglages input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;}
+  /* Tout est passé dans ⋮ : la cloche reste dans la rangée, l'état d'enregistrement s'efface (une erreur a sa bannière). */
+  .header-outils,.header-actions{display:contents;}
+  #sync{display:none;}
   .cloche{position:absolute;top:6px;right:calc(16px + var(--reglages-w));}
   /* Les notifications, sous la cloche, contre le bord droit de l'en-tête (au-delà de ⋮). */
   .notifs{right:calc(-8px - var(--reglages-w));top:calc(100% + 6px);width:min(420px,calc(100cqw - 16px));}
@@ -524,8 +540,10 @@ button,select{font-family:inherit;}
   .nav-btn{padding:10px;font-size:14px;}
   .nav-home{padding:10px;font-size:14px;}
   .poignee-fil{min-height:40px;font-size:13px;}
-  .barre-docs{flex-basis:46px;}
-  .barre-docs button{width:40px;height:44px;font-size:18px;}
+  .lang-doc{width:30px;height:56px;font-size:18px;}
+  .invite-ajout{top:-9px;font-size:12px;line-height:16px;}
+  .menu-reglages #links-wrap{min-height:40px;font-size:13px;}
+  .menu-reglages input[type=checkbox]{width:20px;height:20px;}
   .poignee{flex-basis:40px;font-size:13px;}
   .sp-titre{min-height:40px;}
   .comp-nav{min-height:40px;padding:6px 10px;font-size:13.5px;}
@@ -631,9 +649,8 @@ const GABARIT=`<div class="racine">
     <div class="main-area">
       <div class="content-row" id="content-row">
         <button type="button" class="poignee gauche" id="poignee-prog" hidden></button>
-        <div class="pane" id="pane-prog"><div class="sheet doc-prog" id="sheet-prog"></div></div>
-        <div class="barre-docs" id="barre-docs"><button type="button" id="fermer-prog">‹</button><button type="button" id="fermer-ref">›</button></div>
-        <div class="pane" id="pane-ref"><div class="sheet doc-ref" id="sheet-ref"></div></div>
+        <div class="pane" id="pane-prog"><div class="tenue"><button type="button" class="lang-doc prog" id="fermer-prog">‹</button></div><div class="sheet doc-prog" id="sheet-prog"></div></div>
+        <div class="pane" id="pane-ref"><div class="tenue"><button type="button" class="lang-doc ref" id="fermer-ref">›</button></div><div class="sheet doc-ref" id="sheet-ref"></div></div>
         <button type="button" class="poignee droite" id="poignee-ref" hidden></button>
       </div>
       <div class="page-traiter" id="page-traiter" hidden></div>
@@ -686,7 +703,7 @@ const GABARIT=`<div class="racine">
 const UI={
  fr:{retirerProbable:"Retirer la mention « probable » : le lien est gardé",ouvrirComp:"Ouvrir cette compétence",soutien:"Pour du soutien :",proposer:"Proposer",plusTip:"Proposer un ajout",modifie:"modifié",supprimer:"Supprimer",supprimerMsg:"Supprimer mon message",modifierMsg:"Modifier mon message",title:'DEP 5319 — Charpenterie-menuiserie',tagline:"Outil de concordance — Référentiel d'évaluation 5319 & Programme d'études",ref:"Référentiel d'évaluation",prog:"Programme d'études",nav:'Navigation',links:'Liens',linksTip:"Afficher les liens vers l'autre document",undo:'Annuler (Ctrl+Z)',nothing:'Rien à annuler',theme:"Inverser l'affichage",comp:'Compétences',fermerProg:"Refermer le programme d'études",fermerRef:"Refermer le référentiel d'évaluation",home:'⌂ Accueil',yesno:'Oui / Non',pts:'pts',noSubs:'Aucun sous-critère.',tol:'Tolérance :',seuil:'Seuil de réussite :',el:'Él.',global:'Global',situ:'Compétence traduite en situation',lang:'EN',
   typeSitu:'Situation',typeComp:'Comportement',duree:'Durée :',heures:'{n} heures',hCourt:'{n} h',
-  editMaitre:'Modifier les liens de ce critère',editClose:"Fermer l'édition",
+  editMaitre:'Modifier les liens de ce critère',editClose:"Fermer l'édition",inviteAjout:"Cliquer ici pour proposer l'ajout",
   
   probableCourt:'probable',
   legAttente:"en attente d'une décision",
@@ -721,7 +738,7 @@ const UI={
   bReseau:'Impossible de joindre la feuille Google : la dernière modification n’a peut-être pas été enregistrée.',bCompte:'Votre compte est introuvable dans la feuille : reconnectez-vous.',bAdmin:'Mot de passe administrateur refusé : reconnectez-vous.',bRecent:"Un geste plus récent d'un autre administrateur sur ce lien empêche l'annulation."},
  en:{retirerProbable:"Remove the \"probable\" mention: the link is kept",ouvrirComp:"Open this competency",soutien:"For support:",proposer:"Propose",plusTip:"Propose an addition",modifie:"edited",supprimer:"Delete",supprimerMsg:"Delete my message",modifierMsg:"Edit my message",title:'DVS 5819 — Carpentry',tagline:'Cross-reference tool — Specifications for Evaluation 5819 & Program of Study',ref:'Specifications for Evaluation',prog:'Program of Study',nav:'Navigation',links:'Links',linksTip:'Show links to the other document',undo:'Undo (Ctrl+Z)',nothing:'Nothing to undo',theme:'Invert display',comp:'Competencies',fermerProg:'Close the program of study',fermerRef:'Close the specifications for evaluation',home:'⌂ Home',yesno:'Yes / No',pts:'marks',noSubs:'No sub-criteria.',tol:'Tolerance:',seuil:'Passing threshold:',el:'El.',global:'Overall',situ:'Competency translated into a situation',lang:'FR',
   typeSitu:'Situation',typeComp:'Behaviour',duree:'Duration:',heures:'{n} hours',hCourt:'{n} h',
-  editMaitre:'Edit the links of this criterion',editClose:'Close editing',
+  editMaitre:'Edit the links of this criterion',editClose:'Close editing',inviteAjout:'Click here to propose the addition',
   
   probableCourt:'probable',
   legAttente:"awaiting a decision",
@@ -839,7 +856,8 @@ function monter(host){
     $('nav-toggle').title=U('nav');$('links-label').textContent=' '+U('links');$('links-wrap').title=U('linksTip');
     $('theme-btn').title=U('theme');$('nav-label-comp').textContent=U('comp');$('nav-home').textContent=U('home');$('nav-membres').textContent=U('membres');
     [['fermer-prog','fermerProg'],['fermer-ref','fermerRef']].forEach(([id,k])=>{$(id).title=U(k);$(id).setAttribute('aria-label',U(k));});
-    $('poignee-prog').innerHTML=`<span>🔨 ${esc(U('prog'))}</span>`;$('poignee-ref').innerHTML=`<span>📋 ${esc(U('ref'))}</span>`;
+    $('poignee-prog').innerHTML=`<span>🔨 ${esc(U('prog'))}</span><span class="lang-doc prog" aria-hidden="true">›</span>`;
+    $('poignee-ref').innerHTML=`<span>📋 ${esc(U('ref'))}</span><span class="lang-doc ref" aria-hidden="true">‹</span>`;
     $('btn-reglages').title=U('reglages');$('btn-reglages').setAttribute('aria-label',U('reglages'));
     
     majIdent();
@@ -1252,6 +1270,7 @@ function monter(host){
     const nT=estAdmin()?aTraiter().length:0;
     $('btn-traiter').hidden=!estAdmin();
     $('btn-traiter').innerHTML=`${esc(U('traiter'))}${nT?`<span class="compteur">${nT}</span>`:''}`;
+    $('btn-reglages').innerHTML=`⋮${estAdmin()&&nT?`<span class="compteur">${nT}</span>`:''}`;
     $('btn-traiter').classList.toggle('on',page==='traiter');
     const nN=connecte()?notifications().filter(n=>n.nouv).length:0;
     $('cloche').hidden=!connecte();
@@ -1406,6 +1425,7 @@ function monter(host){
     const chips=()=>`<div class="ec-chips-row">${links.map(l=>`<button type="button" class="ec-chip ${l.cls}" data-ecid="${l.ec}"><span class="barre-code">${ecCourt(l.ec)}</span></button>`).join('')}</div>`;
     let cls='el-card'+(open?' expanded':'')+(opt.lie?' lie':'')+(opt.editable?' editable':'')+(opt.disponible?' disponible':'')+(opt.choisi?' choisi':'');
     let h=`<div class="${cls}" data-elkey="${e.id}"${opt.ecId?` data-elrow="${opt.ecId}" data-elid="${e.id}"`:''}>`;
+    if(opt.disponible)h+=`<span class="invite-ajout" aria-hidden="true">${esc(U('inviteAjout'))}</span>`;
     h+=`<div class="el-card-top" data-eltgl="${e.id}" role="button" tabindex="0" aria-expanded="${open}">`;
     if(opt.editable)h+=`<div class="el-row-check" role="checkbox" tabindex="0" aria-checked="${!!opt.coche}">${opt.coche?'✓':''}</div>`;
     const lab=T(e.label),m=lab.match(/^(.+?)\s+—\s+(.+)$/);
@@ -1435,7 +1455,7 @@ function monter(host){
     const plie=empile()&&!vues.prog;
     el.classList.toggle('plie',plie);
     let h=`<div class="sp-header">${titreDoc('prog')}`;
-    if(ajout)h+=`<span class="sp-actions"><span class="sp-editing-badge">+ ${ecCourt(ajout)}<button class="sp-close" id="sp-fermer-ajout" title="${esc(U('editClose'))}" aria-label="${esc(U('editClose'))}">✕</button></span></span>`;
+
     if(editing)h+=`<span class="sp-actions"><span class="sp-editing-badge">✎ ${ecCourt(selectedEc)}<button class="sp-close" id="sp-deselect" title="${esc(U('editClose'))}" aria-label="${esc(U('editClose'))}">✕</button></span></span>`;
     h+=`</div>`;
     if(plie){el.innerHTML=h;return;}
@@ -1464,7 +1484,7 @@ function monter(host){
     el.innerHTML=h;
     bindElCards(el);
     if(ajout){
-      $('sp-fermer-ajout').addEventListener('click',()=>{ajoutOuvert=null;ajoutEl='';ajoutTexte='';render();montrer(`#sheet-ref [data-eckey="${ajout}"]`,'center');});
+
       // Un clic sur un élément disponible le choisit; son chevron, lui, déplie ses précisions.
       el.querySelectorAll('.el-card.disponible>.el-card-top').forEach(top=>{
         top.addEventListener('click',ev=>{
@@ -1884,16 +1904,19 @@ function monter(host){
   });
   document.addEventListener('click',ev=>{if(notifsOuvert&&!ev.composedPath().includes($('cloche'))){notifsOuvert=false;garder('notifs_lu',new Date().toISOString());render();}});
 
-  // ---- Menu ⋮ (en-tête sur deux rangées, même seuil que la règle @container de 760 px) : le bouton du compte, EN et le
-  // thème y passent; au-delà, ils restent à leur place dans l'en-tête. Fermé par un toucher ailleurs, Échap, ou après
-  // l'usage d'un de ses boutons; jamais ouvert en même temps que les notifications. ----
+  // ---- Menu ⋮ (en-tête sur une rangée, même seuil que la règle @container de 760 px) : le bouton du compte, « À
+  // traiter », Liens, EN, Annuler et le thème y passent; au-delà, ils restent à leur place dans l'en-tête. Fermé par un
+  // toucher ailleurs, Échap, ou après l'usage d'un de ses boutons; jamais ouvert en même temps que les notifications. ----
   const identEntete=R.querySelector('.header-actions .ident-btn'),racine=R.querySelector('.racine');
   function ouvrirReglages(o){reglagesOuvert=o;$('menu-reglages').hidden=!o;$('btn-reglages').setAttribute('aria-expanded',String(o));}
   // Le seuil se lit dans la règle @container elle-même (⋮ affiché), à la largeur exacte du conteneur.
   function placerReglages(){
     const m=$('menu-reglages'),tel=racine.getBoundingClientRect().width>0&&getComputedStyle($('reglages')).display!=='none';
-    if(tel&&identEntete.parentNode!==m)m.append(identEntete,$('lang-btn'),$('theme-btn'));
-    else if(!tel&&identEntete.parentNode===m){ouvrirReglages(false);$('undo-btn').before(identEntete,$('lang-btn'));$('undo-btn').after($('theme-btn'));}
+    if(tel&&identEntete.parentNode!==m)m.append(identEntete,$('btn-traiter'),$('links-wrap'),$('lang-btn'),$('undo-btn'),$('theme-btn'));
+    else if(!tel&&identEntete.parentNode===m){
+      ouvrirReglages(false);
+      $('sync').before($('links-wrap'));$('sync').after($('btn-traiter'));$('cloche').after(identEntete,$('lang-btn'),$('undo-btn'),$('theme-btn'));
+    }
   }
   placerReglages();
   // Passage de côte à côte à empilés, ou l'inverse : les documents se redessinent (poignées ou accordéons).
@@ -1942,13 +1965,14 @@ function monter(host){
     if(membres){renderMembres();return;}
     if(selectedEc&&(!vues.prog||!estAdmin()))selectedEc=null;
     if(ajoutOuvert&&(!vues.prog||!proposeur()||!ecById(ajoutOuvert)))ajoutOuvert=null;
-    // Côte à côte : un document refermé laisse sa poignée sur sa marge, et la barre du milieu disparaît. Empilés
+    // Côte à côte : un document refermé devient une boîte flottante sur sa marge; la languette d'un document ouvert
+    // n'apparaît que si l'autre l'est aussi (un document reste toujours ouvert). Empilés
     // (téléphone) : les deux documents restent, chacun replié sur son titre ou déplié.
     const pile=empile();pileRendu=pile;
     if(!pile&&!vues.prog&&!vues.ref){vues={prog:true,ref:true};garder('vues',JSON.stringify(vues));}
     const voir={prog:pile||vues.prog,ref:pile||vues.ref};
     $('pane-prog').hidden=!voir.prog;$('pane-ref').hidden=!voir.ref;
-    $('barre-docs').hidden=pile||!(vues.prog&&vues.ref);
+    $('fermer-prog').hidden=$('fermer-ref').hidden=pile||!(vues.prog&&vues.ref);
     $('poignee-prog').hidden=pile||vues.prog;$('poignee-ref').hidden=pile||vues.ref;
     if(voir.prog)renderProgramme($('sheet-prog'));else $('sheet-prog').innerHTML='';
     if(voir.ref)renderReferentiel($('sheet-ref'));else $('sheet-ref').innerHTML='';
@@ -1969,7 +1993,7 @@ function monter(host){
   }
 
   $('comp-grille').addEventListener('click',ev=>{const b=ev.target.closest('[data-comp]');if(b)goToComp(b.dataset.comp);});
-  // Les flèches de la barre du milieu referment un document, et sa poignée prend le focus; la poignée le rouvre. Le
+  // La languette d'un document ouvert le referme, et sa boîte flottante prend le focus; la boîte le rouvre. Le
   // titre d'un document empilé le replie ou le déplie.
   function basculerDoc(d,o){
     vues[d]=o;garder('vues',JSON.stringify(vues));render();
