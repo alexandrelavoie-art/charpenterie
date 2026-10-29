@@ -142,7 +142,7 @@ button,input,textarea{font-family:inherit}
 .poignee-fil:hover{filter:brightness(1.3);}
 .poignee-fil .chev{font-size:10px;transition:transform .18s;}
 .poignee-fil.active .chev{transform:rotate(180deg);}
-.compte{font-family:'JetBrains Mono',monospace;font-weight:500;opacity:.8;margin-left:2px;}
+.compte{font-variant-numeric:tabular-nums;font-weight:500;opacity:.8;margin-left:2px;}
 .comp-nav{display:inline-flex;align-items:center;gap:6px;background:transparent;border:none;padding:4px 6px;cursor:pointer;color:var(--fg-muted);font-size:12.5px;font-weight:500;white-space:nowrap;}
 .comp-nav:hover{color:var(--fg);}
 .fil-corps{height:clamp(180px,38vh,440px);display:flex;flex-direction:column;border-top:1px solid var(--border-soft);}
@@ -194,7 +194,7 @@ button,input,textarea{font-family:inherit}
 .ec-card.expanded .ec-chevron{transform:rotate(180deg);}
 
 .el-chips-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 6px 64px;}
-.el-chip,.ec-chip{display:inline-flex;align-items:center;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;line-height:1.4;border-radius:3px;padding:2px 6px;border:1.5px solid transparent;cursor:pointer;background:none;}
+.el-chip,.ec-chip{display:inline-flex;align-items:center;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.01em;line-height:1.4;border-radius:3px;padding:2px 6px;border:1.5px solid transparent;cursor:pointer;background:none;}
 
 .ec-body{border-top:1px solid var(--border-soft);padding:6px 12px 8px 64px;}
 .ec-body .el-chips-row{margin-top:6px;padding:6px 0 0;border-top:1px solid var(--border-soft);}
@@ -246,8 +246,9 @@ button,input,textarea{font-family:inherit}
 /* En-tête de feuille avec fermeture de l'édition */
 .sp-header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--fg);color:var(--fg);}
 .sp-titre{display:inline-flex;align-items:center;gap:6px;font:inherit;color:inherit;background:none;border:none;padding:0;text-align:left;}
-button.sp-titre{cursor:pointer;}
-.sp-titre .chev{font-size:10px;transition:transform .18s;}
+/* Documents empilés : le titre occupe la rangée, et son chevron, dans un rond à la couleur du document, se tient au bout. */
+button.sp-titre{flex:1;cursor:pointer;}
+button.sp-titre .chev{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:auto;flex-shrink:0;border:1.5px solid currentColor;border-radius:50%;background:color-mix(in srgb,currentColor 12%,transparent);font-size:12px;line-height:1;transition:transform .18s;}
 .sp-titre[aria-expanded="false"] .chev{transform:rotate(-90deg);}
 .sp-actions{display:inline-flex;align-items:center;gap:8px;}
 .sp-editing-badge{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent);border-radius:4px;padding:2px 6px 2px 8px;font-family:'JetBrains Mono',monospace;}
@@ -496,6 +497,8 @@ button,select{font-family:inherit;}
   .bulle input{flex:1 1 100%;min-width:0;}
   /* Discussion : plus haute; la barre du bas se resserre */
   .fil-barre{padding:7px 6px 3px;gap:4px;}
+  /* La languette de la discussion s'encastre à moitié dans la barre du bas : elle déborde moins sur les documents. */
+  .fil-barre .poignee-fil{min-height:30px;transform:translate(-50%,50%);border-radius:8px;}
   .fil-corps{height:clamp(200px,50vh,440px);}
   .fil-titre{padding:6px 10px 0;}
   .fil-liste{padding:6px 10px;}
@@ -552,7 +555,7 @@ button,select{font-family:inherit;}
   .ec-edit{width:40px;height:40px;margin:-9px 0;opacity:.85;font-size:16px;}
   .sub-list li,.pc-list li{font-size:13px;}
   .el-chips-row,.ec-chips-row{gap:6px;}
-  .el-chip,.ec-chip{min-height:34px;padding:4px 9px;font-size:12px;}
+  .el-chip,.ec-chip{min-height:22px;padding:0 6px;font-size:12px;}
   .el-chip .etiq,.ec-chip .etiq{font-size:11px;}
   .pouce{min-width:38px;min-height:38px;justify-content:center;padding:4px 6px;font-size:15px;}
   .pouce .pouce-ic{opacity:.7;}
