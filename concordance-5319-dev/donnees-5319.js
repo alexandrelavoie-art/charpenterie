@@ -2,7 +2,7 @@
    Sources : programme d'études 5319 (+ addenda) et fiches d'évaluation du référentiel 5319;
    Program of Study et Specifications for Evaluation 5819 pour l'anglais.
    « heures » : durée de chaque compétence, selon la grille du programme 5319 (1 350 h).
-   Chaque texte est bilingue {fr, en}. « defaultLinks » = liens proposés à la génération : point de départ de la version maître.
+   Chaque texte est bilingue {fr, en}. « defaultLinks » = liens proposés à la génération : point de départ de la concordance.
    Les seuils anglais des compétences C1, C2 et C19 sont traduits et restent à vérifier. */
 window.DEP5319_DONNEES={
  "version": "2026-10-27",
@@ -5687,7 +5687,7 @@ window.DEP5319_DONNEES={
     },
     "C13-EC-11": {
      "C13-E5": "fort",
-     "C13-E4": "avalider"
+     "C13-E4": "probable"
     }
    }
   },
@@ -7897,7 +7897,7 @@ window.DEP5319_DONNEES={
     },
     "C17-EC-09": {
      "C17-E9": "probable",
-     "C17-E5": "avalider"
+     "C17-E5": "probable"
     },
     "C17-EC-10": {
      "C17-E9": "fort"
@@ -8294,7 +8294,7 @@ window.DEP5319_DONNEES={
     },
     "C18-EC-09": {
      "C18-E2": "fort",
-     "C18-E4": "avalider"
+     "C18-E4": "probable"
     }
    }
   },

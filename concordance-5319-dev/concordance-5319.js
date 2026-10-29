@@ -4,24 +4,25 @@
      <script src="donnees-5319.js"></script>
      <script src="concordance-5319.js"></script>
    L'outil vit dans un Shadow DOM : ses styles n'atteignent pas la page hôte et ceux du thème ne l'atteignent pas.
-   Enregistrement : feuille Google partagée (URL_FEUILLE, ou l'attribut feuille, p. ex. la page d'essai DEV), sinon ce
-   navigateur seulement. Une page qui donne l'attribut feuille garde ses données de navigateur à part (préfixe dep5319dev_).
+   Enregistrement : la feuille Google partagée (URL_FEUILLE, ou l'attribut feuille, p. ex. la page d'essai DEV). Une page
+   qui donne l'attribut feuille garde ses données de navigateur à part (préfixe dep5319dev_).
    Modèle (voir PLAN-DE-TRAVAIL.md) :
    - Journal {ts, comp, ec, el, geste, nom, participant}, rejoué dans l'ordre sur les liens proposés (defaultLinks).
      Geste : proposé (un participant propose d'ajouter le lien; un seul par lien, qui vit tant qu'au moins une personne
      l'appuie d'un 👍), ajouté, adopté (ajouté ou adopté sur un lien qui a une proposition l'adoptent), non retenu,
      retiré, confirmé (retire seulement la mention « probable ») et maintenu (tranche seulement les votes contre);
    - Ctrl+Z d'un administrateur : la feuille efface la ligne de son geste ({annuler:[{ts, comp, ec, el}]});
-   - votes {ts, comp, ec, el, sens: pour | contre | retrait} sur les liens de la version maître : le dernier vote de
-     chaque personne compte; un vote contre donné après la dernière décision met le lien en attente;
-   - messages {ts, comp, cible, el, version, type, texte} : un fil par lien (cible + el); la raison d'une proposition
-     porte la version « p » + le numéro de son auteur.
+   - votes {ts, comp, ec, el, sens: pour | contre | retrait} sur les liens de la concordance et les ajouts proposés : le
+     dernier vote de chaque personne compte; un vote contre donné après la dernière décision met le lien en attente;
+   - messages {ts, comp, cible, el, type, texte} : la discussion de la compétence; un message qui vise un lien porte son
+     critère (cible) et son élément (el). Type : vide (message), contre (raison d'un vote contre), ecart (raison d'un
+     ajout proposé), modif et supprime (son auteur modifie ou retire un message).
    « participant » et « centre » sont des numéros de lignes des onglets Participants et Centres : le nom et le centre
    affichés sont toujours ceux de la feuille. */
 (function(){
 'use strict';
 
-// URL de l'application Web Google Apps Script (voir LISEZMOI.md). Vide = mode local.
+// URL de l'application Web Google Apps Script (voir LISEZMOI.md).
 const URL_FEUILLE='https://script.google.com/macros/s/AKfycbyGwb6rlwT_fTwrh4HwZ_pYlkH-2RKd9C5fYWQRcxr6L6KdHE4TKOKTHjtI2Jajj4vq/exec';
 const POLICES='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
 
@@ -31,14 +32,12 @@ const CSS=`
   --border:#c9c6bf;--border-soft:#dedbd4;--fg:#1a1816;--fg-muted:#6b6760;--ink:#1a1816;--accent:#1f4e8c;--accent-bg:#e4edf8;--doc-ref:#2d4f7a;--doc-prog:#8a5a1e;--hl:#fff3bf;
   --fort:#1a6335;--fort-bg:#d6f0e2;
   --probable:#7a4a08;--probable-bg:#feecc8;
-  --avalider:#1a4578;--avalider-bg:#d8eaf8;
   --nav-w:200px;color-scheme:light;}
 :host([data-theme="dark"]){
   --page-bg:#161616;--bg:#1f1f1f;--surface:#1f1f1f;--surface-2:#282828;
   --border:#444444;--border-soft:#333333;--fg:#f0f0f0;--fg-muted:#9a9a9a;--ink:#f0f0f0;--accent:#7fb0ee;--accent-bg:#172a44;--doc-ref:#9bbbe6;--doc-prog:#e0b070;--hl:#3d3516;
   --fort:#6dd492;--fort-bg:#0d2819;
   --probable:#edb644;--probable-bg:#271c05;
-  --avalider:#68acee;--avalider-bg:#0c1d32;
   color-scheme:dark;}
 :host([hidden]){display:none}
 [hidden]{display:none!important}
@@ -65,8 +64,6 @@ button,input,textarea{font-family:inherit}
 .carte-titre{font-size:13px;font-weight:600;line-height:1.3;flex:1;}
 .carte-pied{display:flex;gap:10px;align-items:center;font-size:11px;color:var(--fg-muted);}
 .carte-heures{margin-left:auto;font-family:'JetBrains Mono',monospace;}
-.carte-barre{height:3px;background:var(--border-soft);border-radius:2px;overflow:hidden;}
-.carte-barre span{display:block;height:100%;background:var(--fort);}
 
 .app-shell{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
 .app-header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--fg);flex-shrink:0;flex-wrap:wrap;}
@@ -76,10 +73,6 @@ button,input,textarea{font-family:inherit}
 .header-info{flex:1 1 280px;min-width:0;}
 .header-doc{color:var(--fg);font-weight:700;font-size:17px;letter-spacing:-.01em;line-height:1.3;}
 .header-sous{color:var(--fg-muted);font-size:11.5px;line-height:1.3;}
-.vues{display:inline-flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;flex-shrink:0;}
-.app-header .vues .vue-btn{border:none;border-radius:0;}
-.app-header .vues .vue-btn+.vue-btn{border-left:1px solid var(--border);}
-.app-header .vues .vue-btn.on{background:var(--accent);color:var(--bg);}
 .header-outils{display:contents;}
 .reglages{display:none;}
 .header-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
@@ -104,33 +97,41 @@ button,input,textarea{font-family:inherit}
 .nav-btn.active{background:var(--accent);color:var(--bg);font-weight:600;}
 .nav-txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
 .nav-btn.probable .nav-txt{font-style:italic;}
-.nav-prog{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:10px;opacity:.8;}
-.nav-prog.complet{color:var(--fort);opacity:1;font-weight:600;}
-.nav-btn.active .nav-prog{color:inherit;}
 .nav-divider{height:1.5px;background:var(--border-soft);margin:6px 0;}
 .nav-home{font-size:11px;color:var(--fg-muted);cursor:pointer;padding:5px 8px;transition:background .12s;background:none;border:none;text-align:left;border-radius:4px;}
 .nav-home:hover{background:var(--surface-2);color:var(--fg);}
+.nav-home.active{background:var(--accent);color:var(--bg);font-weight:600;}
 
 .main-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
 .content-row{flex:1 1 0;display:flex;min-height:0;overflow:hidden;background:var(--page-bg);}
-/* Deux "feuilles" de même largeur, comme deux PDF côte à côte : programme à gauche, référentiel à droite */
+/* Deux "feuilles" de même largeur, comme deux PDF côte à côte : programme à gauche, référentiel à droite. Entre les
+   deux, une barre étroite et ses flèches referment l'un ou l'autre; le document refermé devient une poignée sur sa marge. */
 .pane{flex:1 1 0;min-width:0;overflow-y:auto;padding:20px 16px 24px;}
+.barre-docs{flex:0 0 26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.barre-docs button{width:22px;height:30px;padding:0;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--fg-muted);font-size:15px;line-height:1;cursor:pointer;}
+.barre-docs button:hover{color:var(--fg);border-color:var(--fg-muted);}
+.poignee{flex:0 0 30px;display:flex;align-items:center;justify-content:center;padding:14px 0;border:none;border-right:1px solid var(--border);background:var(--surface-2);color:var(--doc-prog);font-size:12px;font-weight:700;cursor:pointer;}
+.poignee span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;}
+.poignee.droite{border-right:none;border-left:1px solid var(--border);color:var(--doc-ref);}
+.poignee.droite span{transform:none;}
+.poignee:hover{background:var(--surface);}
 .sheet{background:var(--surface);border:1px solid var(--border);border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.06);max-width:820px;margin:0 auto;padding:28px 32px 40px;min-height:100%;}
 /* Mises en page selon la largeur de l'outil lui-même (pleine page ou colonne WordPress) */
-@container (max-width:860px){.content-row{flex-direction:column;overflow-y:auto;}.pane{flex:none;overflow:visible;padding:12px 12px 20px;}.sheet{padding:18px 16px 28px;}}
+@container (max-width:860px){.content-row{flex-direction:column;overflow-y:auto;}.pane{flex:none;overflow:visible;padding:12px 12px 20px;}.sheet{padding:18px 16px 28px;}.barre-docs,.poignee{display:none!important;}.sheet.plie{min-height:0;padding-bottom:6px;}.sheet.plie .sp-header{margin-bottom:0;}}
 /* Les autres règles selon la largeur (tablettes, téléphones, colonne étroite) sont à la fin, après les règles de base. */
 
 /* Discussion de la compétence, sous les documents */
 .fil{flex-shrink:0;display:flex;flex-direction:column;border-top:1px solid var(--border);background:var(--surface);}
-.fil-barre{display:flex;align-items:center;gap:8px;padding:5px 10px;}
-.fil-onglets{flex:1;display:flex;justify-content:center;gap:6px;}
-.fil-onglet{font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--fg-muted);border-radius:4px;padding:4px 12px;cursor:pointer;white-space:nowrap;}
-.fil-onglet:hover{color:var(--fg);border-color:var(--fg-muted);}
-.fil-onglet.active{background:var(--accent);border-color:var(--accent);color:var(--bg);}
+/* La barre du bas est une poignée : un clic déploie la discussion ou l'escamote. */
+.fil-barre{position:relative;display:flex;align-items:center;gap:8px;padding:7px 10px 4px;}
+.fil-barre::before{content:"";position:absolute;top:3px;left:50%;width:36px;margin-left:-18px;height:4px;border-radius:2px;background:var(--border);pointer-events:none;}
+.poignee-fil{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:28px;border:none;background:none;color:var(--fg-muted);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.poignee-fil:hover,.poignee-fil.active{color:var(--fg);}
+.poignee-fil .chev{font-size:10px;transition:transform .18s;}
+.poignee-fil.active .chev{transform:rotate(180deg);}
 .compte{font-family:'JetBrains Mono',monospace;font-weight:500;opacity:.8;margin-left:2px;}
 .comp-nav{display:inline-flex;align-items:center;gap:6px;background:transparent;border:none;padding:4px 6px;cursor:pointer;color:var(--fg-muted);font-size:12.5px;font-weight:500;white-space:nowrap;}
 .comp-nav:hover{color:var(--fg);}
-.comp-nav-vide{width:52px;}
 .fil-corps{height:clamp(180px,38vh,440px);display:flex;flex-direction:column;border-top:1px solid var(--border-soft);}
 .fil-liste{flex:1;overflow-y:auto;padding:8px 16px;}
 .vide{font-size:12.5px;color:var(--fg-muted);font-style:italic;padding:10px 0;}
@@ -172,8 +173,7 @@ button,input,textarea{font-family:inherit}
 .ec-head:hover .ec-edit,.ec-edit:focus-visible{opacity:1;}
 .ec-edit:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
 .ec-edit.on{opacity:1;background:var(--accent);border-color:var(--accent);color:var(--bg);}
-.ec-msgs{flex-shrink:0;margin-top:-1px;font-size:10.5px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--fg-muted);padding:1px 6px;cursor:pointer;white-space:nowrap;}
-.ec-msgs:hover{border-color:var(--accent);color:var(--accent);}
+
 .ec-code{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;white-space:nowrap;margin-top:2px;letter-spacing:.02em;min-width:44px;flex-shrink:0;}
 .ec-label{flex:1;font-size:13px;font-weight:500;}
 .ec-pts{font-size:11px;font-weight:700;color:var(--fg-muted);white-space:nowrap;margin-top:2px;}
@@ -182,10 +182,6 @@ button,input,textarea{font-family:inherit}
 
 .el-chips-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 6px 64px;}
 .el-chip,.ec-chip{display:inline-flex;align-items:center;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace;line-height:1.4;border-radius:3px;padding:2px 6px;border:1.5px solid transparent;cursor:pointer;background:none;}
-.el-chip.fort,.ec-chip.fort{background:var(--fort-bg);color:var(--fort);border-color:var(--fort);}
-.el-chip.probable,.ec-chip.probable{background:var(--probable-bg);color:var(--probable);border-color:var(--probable);}
-.el-chip.avalider,.ec-chip.avalider{background:var(--avalider-bg);color:var(--avalider);border-color:var(--avalider);}
-.chip-ok{margin-left:4px;}
 
 .ec-body{border-top:1px solid var(--border-soft);padding:6px 12px 8px 64px;}
 .ec-body .el-chips-row{margin-top:6px;padding:6px 0 0;border-top:1px solid var(--border-soft);}
@@ -194,7 +190,7 @@ button,input,textarea{font-family:inherit}
 .sub-list li::before{content:"–";position:absolute;left:-12px;}
 .no-subs{font-size:12px;color:var(--fg-muted);font-style:italic;}
 
-/* Mode édition : même carte EL, + case à cocher, statut et validation */
+/* Crayon des administrateurs : la carte de lecture, plus une case à cocher */
 .el-row-check{width:15px;height:15px;flex-shrink:0;border-radius:3px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;background:var(--bg);transition:background .1s,border-color .1s;}
 .el-card.editable{user-select:none;}
 .el-card.editable .el-row-check{cursor:pointer;}
@@ -216,35 +212,17 @@ button,input,textarea{font-family:inherit}
 .el-card-top .el-row-check{position:absolute;left:9px;top:10px;width:14px;height:14px;}
 .el-card-main{flex:1;min-width:0;}
 .el-card.editable .pc-list{margin-top:6px;}
-.el-card.linked-fort{border-color:var(--fort);background:var(--fort-bg);}
-.el-card.linked-probable{border-color:var(--probable);background:var(--probable-bg);}
-.el-card.linked-avalider{border-color:var(--avalider);background:var(--avalider-bg);}
-.el-card.linked-fort .el-row-check{background:var(--fort);border-color:var(--fort);color:#fff;}
-.el-card.linked-probable .el-row-check{background:var(--probable);border-color:var(--probable);color:#fff;}
-.el-card.linked-avalider .el-row-check{background:var(--avalider);border-color:var(--avalider);color:#fff;}
-.val-line{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:5px;font-size:11px;color:var(--fg-muted);cursor:default;}
-.val-ok{color:var(--fort);font-weight:600;}
-.val-btn{font-size:11px;font-weight:600;border:1px solid var(--fort);color:var(--fort);background:var(--surface);border-radius:4px;padding:1px 9px;cursor:pointer;}
-.val-btn:hover{background:var(--fort-bg);}
+.el-card.editable .el-row-check[aria-checked="true"]{background:var(--fort);border-color:var(--fort);color:#fff;}
 .val-lien{background:none;border:none;color:var(--fg-muted);text-decoration:underline;cursor:pointer;font-size:11px;}
-.val-hint{font-style:italic;}
-/* Chip de statut + menu déroulant */
-.status-wrap{flex-shrink:0;margin-top:1px;}
-.status-chip{font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;background:var(--surface-2);color:var(--fg-muted);white-space:nowrap;transition:all .12s;}
-.status-chip:hover{border-color:var(--fg-muted);color:var(--fg);}
-.status-chip.fort{background:var(--fort-bg);color:var(--fort);border-color:var(--fort);}
-.status-chip.probable{background:var(--probable-bg);color:var(--probable);border-color:var(--probable);}
-.status-chip.avalider{background:var(--avalider-bg);color:var(--avalider);border-color:var(--avalider);}
-.status-menu{position:fixed;z-index:500;min-width:170px;background:var(--surface);border:1px solid var(--border);border-radius:5px;box-shadow:0 6px 20px rgba(0,0,0,.15);padding:4px;display:flex;flex-direction:column;}
-.status-opt{display:flex;align-items:center;gap:8px;font-size:12px;text-align:left;background:transparent;border:none;border-radius:4px;padding:6px 8px;cursor:pointer;color:var(--fg);}
-.status-opt:hover{background:var(--surface-2);}
-.status-opt.cur{font-weight:700;}
-.status-opt.ok{color:var(--fort);font-weight:600;}
-.status-opt.rm{color:var(--fg-muted);}
-.status-sep{height:1px;background:var(--border-soft);margin:3px 4px;}
-/* Programme EL cards */
-.el-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;padding:0;transition:opacity .22s;}
-.el-card.dimmed{opacity:.28;}
+/* Programme EL cards. En lecture, les éléments liés à au moins un critère sont mis en relief; aucun n'est estompé.
+   Mode « + » : le relief passe aux éléments disponibles pour un ajout, qui attendent un clic. (Apparence provisoire :
+   le lot 2 la redessine.) */
+.el-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;padding:0;}
+.el-card.lie{border-color:var(--fg-muted);box-shadow:inset 3px 0 0 var(--doc-prog);}
+.el-card.disponible{border:1.5px dashed var(--accent);}
+.el-card.disponible>.el-card-top{cursor:pointer;}
+.el-card.disponible>.el-card-top:hover{background:var(--accent-bg);}
+.el-card.choisi{border:2px solid var(--accent);background:var(--accent-bg);}
 .pc-list{list-style:none;padding:0;margin:0;}
 .pc-list li{font-size:12px;color:var(--fg-muted);padding:1px 0;line-height:1.4;position:relative;}
 .pc-list li::before{content:"–";position:absolute;left:-12px;}
@@ -252,6 +230,10 @@ button,input,textarea{font-family:inherit}
 
 /* En-tête de feuille avec fermeture de l'édition */
 .sp-header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--fg);color:var(--fg);}
+.sp-titre{display:inline-flex;align-items:center;gap:6px;font:inherit;color:inherit;background:none;border:none;padding:0;text-align:left;}
+button.sp-titre{cursor:pointer;}
+.sp-titre .chev{font-size:10px;transition:transform .18s;}
+.sp-titre[aria-expanded="false"] .chev{transform:rotate(-90deg);}
 .sp-actions{display:inline-flex;align-items:center;gap:8px;}
 .sp-editing-badge{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent);border-radius:4px;padding:2px 6px 2px 8px;font-family:'JetBrains Mono',monospace;}
 .sp-editing-badge .sp-close{font-size:13px;color:var(--accent);}
@@ -266,12 +248,6 @@ button,input,textarea{font-family:inherit}
 /* Surlignage croisé au survol d'une chip */
 .ec-card.hl,.el-card.hl{background:var(--hl);border-color:var(--fg-muted);}
 .ec-card.hl>.ec-head,.el-card.hl>.el-card-top{background:transparent;}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--fg-muted);}
-.leg-dot{width:10px;height:10px;flex-shrink:0;}
-.leg-dot.fort{background:var(--fort);}
-.leg-dot.probable{background:var(--probable);}
-.leg-dot.avalider{background:var(--avalider);}
-.leg-ok{font-weight:700;color:var(--fort);}
 
 .tooltip{position:fixed;z-index:999;background:var(--fg);color:var(--bg);font-size:11.5px;padding:8px 12px;max-width:280px;pointer-events:none;line-height:1.5;}
 .tooltip ul{list-style:none;padding:0;margin:0;}
@@ -283,12 +259,6 @@ button,input,textarea{font-family:inherit}
 .modal-fond{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal{background:var(--surface);color:var(--fg);border:1px solid var(--border);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:20px 22px;width:min(430px,100%);display:flex;flex-direction:column;gap:12px;}
 .modal h2{font-size:16px;font-weight:700;}
-/* Deux onglets en tête de la fenêtre du compte : Se connecter, Créer un compte */
-.ident-onglets{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
-.ident-onglets button{flex:1;font-size:13.5px;font-weight:600;padding:9px 10px;border:none;background:var(--surface);color:var(--fg-muted);cursor:pointer;}
-.ident-onglets button+button{border-left:1px solid var(--border);}
-.ident-onglets button:hover{color:var(--fg);background:var(--surface-2);}
-.ident-onglets button.active{background:var(--accent);color:var(--bg);cursor:default;}
 .modal p{font-size:12.5px;color:var(--fg-muted);}
 .modal label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;}
 .modal input,.modal select{font-size:14px;padding:7px 9px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);}
@@ -301,7 +271,7 @@ button,input,textarea{font-family:inherit}
 .modal .ident-erreur .soutien{display:block;margin-top:3px;font-weight:400;color:var(--fg-muted);}
 .modal .ident-erreur .soutien a{color:var(--accent);}
 
-/* ---- Version 3 : versions des centres, votes, fils par lien, liste « À traiter », notifications ---- */
+/* ---- Votes, ajouts proposés, discussion, liste « À traiter », notifications ---- */
 :host{--contre:#b3261e;--contre-bg:#fde4e1;--info:#1a4578;--info-bg:#d8eaf8;}
 :host([data-theme="dark"]){--contre:#ff8a7a;--contre-bg:#3a1410;--info:#8cc0f5;--info-bg:#132a45;}
 button,select{font-family:inherit;}
@@ -337,16 +307,12 @@ button,select{font-family:inherit;}
 .notif-ic{width:18px;text-align:center;flex-shrink:0;}
 .notif small{display:block;color:var(--fg-muted);font-size:11px;}
 
-/* Pastilles d'un lien : état, votes, traces des centres */
+/* Pastilles d'un lien : état et votes */
 .lien-v{display:inline-flex;align-items:center;gap:1px;margin-right:6px;}
 .el-chip.lien,.ec-chip.lien{background:var(--fort-bg);color:var(--fort);border-color:var(--fort);}
 .el-chip.lien.probable,.ec-chip.lien.probable{background:var(--probable-bg);color:var(--probable);border-color:var(--probable);border-style:dashed;}
-.el-chip.probable,.ec-chip.probable{border-style:dashed;}
 .el-chip .etiq,.ec-chip .etiq{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-left:5px;}
 .el-chip.classe,.ec-chip.classe{opacity:.7;}
-.el-chip.ajoute,.ec-chip.ajoute{background:var(--surface);color:var(--fort);border:1.5px dashed var(--fort);}
-.el-chip.retire,.ec-chip.retire{background:var(--surface);color:var(--contre);border:1.5px dashed var(--contre);}
-.el-chip.retire .barre-code,.ec-chip.retire .barre-code{text-decoration:line-through;}
 .el-chip.fantome,.ec-chip.fantome{background:var(--surface);color:var(--info);border:1.5px dashed var(--info);opacity:.85;}
 .el-chip.fantome.classe,.ec-chip.fantome.classe{opacity:.6;}
 /* Les pouces restent de simples icônes : gris sans vote, gris plus net avec des votes, en couleur pour mon vote */
@@ -359,42 +325,25 @@ button,select{font-family:inherit;}
 .pouce.contre small{color:var(--fg-muted);}
 .pouce.contre small.att{color:var(--contre);}
 
-.trace{font-size:10.5px;font-weight:700;line-height:1.4;color:var(--info);background:none;border:1px solid var(--info);border-radius:8px;padding:0 5px;margin-left:2px;cursor:pointer;white-space:nowrap;}
-.mini-btn{font-size:10.5px;font-weight:600;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:3px;padding:0 6px;margin-left:3px;cursor:pointer;}
-.mini-btn.primaire{background:var(--accent);border-color:var(--accent);color:var(--bg);}
 .bulle{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 12px 8px 64px;padding:6px 8px;border:1px solid var(--contre);border-radius:4px;background:var(--surface);font-size:12px;}
 .bulle input{flex:1 1 260px;min-width:160px;border:1px solid var(--border);border-radius:3px;padding:4px 6px;background:var(--bg);color:var(--fg);font-size:12px;}
-.bulle .aide{flex-basis:100%;font-size:11px;color:var(--fg-muted);}
 .btn-p{font-size:11.5px;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--bg);border-radius:4px;padding:2px 10px;cursor:pointer;}
 .btn-p:disabled{opacity:.5;cursor:not-allowed;}
 .btn-p.danger{border-color:var(--contre);background:var(--contre);}
 .btn-s{font-size:11.5px;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:4px;padding:2px 10px;cursor:pointer;}
 
-/* Mode édition : écarts d'un centre, décisions d'un administrateur */
-.el-card.editable.ecart-ajoute{border:1.5px dashed var(--fort);}
-.el-card.editable.ecart-retire{border:1.5px dashed var(--contre);}
-.el-card.editable.ecart-retire .el-text{text-decoration:line-through;color:var(--fg-muted);}
-.el-card.editable.brouillon{border:2px solid var(--accent);}
-.el-card.editable.pris .el-row-check{opacity:.45;cursor:default;}
+/* Crayon : la mention « probable », les votes et « Maintenir » sur la fiche d'un lien */
 .puce-probable{align-self:center;display:inline-flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;line-height:1.5;padding:0 6px;border-radius:3px;border:1px dashed var(--probable);background:var(--probable-bg);color:var(--probable);cursor:pointer;}
 .puce-probable span{font-size:12px;line-height:1;font-weight:700;}
 .puce-probable:hover{border-style:solid;}
 .note-ecart{margin-top:6px;font-size:11.5px;color:var(--fg-muted);display:flex;flex-direction:column;gap:4px;cursor:default;}
-/* Ma proposition en mode édition : la fiche reste compacte; 💬 affiche ou modifie mon commentaire */
-/* Le + au bout d'une rangée de pastilles, et la boîte « Proposer un ajout » */
+/* Le + au bout d'une rangée de pastilles; la raison d'un ajout s'écrit sur la fiche de l'élément choisi */
 .plus-ajout{border:1px dashed var(--border);background:none;color:var(--fg-muted);border-radius:3px;font-size:11.5px;font-weight:700;line-height:1.3;padding:0 6px;margin-left:2px;cursor:pointer;}
 .plus-ajout:hover,.plus-ajout.on{border-color:var(--fort);color:var(--fort);background:var(--fort-bg);}
-.bulle.ajout{border-color:var(--fort);}
-.bulle.ajout select{flex:1 1 220px;min-width:150px;border:1px solid var(--border);border-radius:3px;padding:3px 6px;background:var(--bg);color:var(--fg);font-size:12px;}
-.bulle-com{border:none;background:none;cursor:pointer;font-size:12.5px;line-height:1;padding:2px 4px;border-radius:3px;opacity:.65;align-self:center;}
-.bulle-com:hover,.bulle-com.on{opacity:1;background:var(--surface-2);}
-.etiq-classe{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);align-self:center;}
 .note-ecart label{display:flex;flex-direction:column;gap:2px;font-weight:600;color:var(--fg);}
 .note-ecart input{font-weight:400;border:1px solid var(--border);border-radius:3px;padding:3px 6px;background:var(--bg);color:var(--fg);font-size:12px;}
 .note-ecart .ligne{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .etiq-ecart{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:3px;padding:0 5px;align-self:flex-start;}
-.etiq-ecart.ajoute{background:var(--fort-bg);color:var(--fort);}
-.etiq-ecart.retire{background:var(--contre-bg);color:var(--contre);}
 .etiq-ecart.probable{background:var(--probable-bg);color:var(--probable);}
 
 /* Discussion : les messages en bulles, les gestes en lignes discrètes; le texte d'un geste le suit en bulle */
@@ -446,10 +395,8 @@ button,select{font-family:inherit;}
 /* Liste « À traiter » */
 .page-traiter{flex:1;overflow-y:auto;padding:18px 20px 30px;}
 .page-traiter h2{font-size:16px;margin-bottom:4px;}
-.page-traiter .intro{font-size:12.5px;color:var(--fg-muted);margin-bottom:16px;}
 .section-t{margin-bottom:20px;max-width:1150px;}
 .section-t h3{font-size:13px;margin-bottom:4px;}
-.section-t .aide{font-size:11.5px;color:var(--fg-muted);margin-bottom:8px;}
 .ligne-t{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 12px;align-items:start;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;padding:8px 12px;margin-bottom:6px;font-size:12.5px;}
 .ligne-t .comp-t{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--fg-muted);padding-top:2px;}
 .ligne-t .detail{display:block;font-size:11.5px;color:var(--fg-muted);}
@@ -461,7 +408,17 @@ button,select{font-family:inherit;}
 .raisons{list-style:none;margin:3px 0 0;padding:0;font-size:12px;display:flex;flex-direction:column;gap:2px;}
 .raisons li{border-left:2px solid var(--contre);padding-left:7px;}
 .raisons li.ajout{border-left-color:var(--fort);}
-.raisons li.retrait{border-left-color:var(--info);}
+/* Membres : regroupés par centre; le titre d'un centre porte, pour les administrateurs, Renommer et Fusionner */
+.groupe-m{margin-bottom:14px;}
+.membres{list-style:none;margin:2px 0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;}
+.membres li{display:inline-flex;align-items:center;gap:6px;}
+.ligne-c{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;padding:7px 12px;margin-bottom:6px;font-size:12.5px;}
+.ligne-c .nom-c{font-weight:600;}
+.ligne-c .detail{font-size:11.5px;color:var(--fg-muted);}
+.ligne-c .actions{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.ligne-c input,.ligne-c select{font-size:12px;border:1px solid var(--border);border-radius:3px;padding:3px 6px;background:var(--bg);color:var(--fg);}
+.ligne-c input{flex:1 1 220px;min-width:0;}
+.ligne-c .ident-erreur{flex-basis:100%;color:var(--contre);font-weight:600;font-size:12px;}
 @container (max-width:860px){.ligne-t{grid-template-columns:1fr;}.ligne-t .actions{justify-content:flex-start;}.bulle{margin-left:12px;}.voile{padding:12px 8px;}.msg.rattache{margin-left:16px;}}
 
 /* ---- Tablettes et téléphones ----
@@ -500,7 +457,7 @@ button,select{font-family:inherit;}
   .header-outils{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex:1 1 100%;min-width:0;}
   /* « À traiter » ouvre la rangée : la file de l'administrateur et son compteur. */
   .header-actions{display:contents;}
-  .vues,.header-actions>*{flex-shrink:0;}
+  .header-actions>*{flex-shrink:0;}
   #btn-traiter{order:-1;}
   #sync{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;}
   .cloche{position:absolute;top:6px;right:calc(16px + var(--reglages-w));}
@@ -522,8 +479,7 @@ button,select{font-family:inherit;}
   .bulle{margin:6px 8px 8px 12px;}
   .bulle input{flex:1 1 100%;min-width:0;}
   /* Discussion : plus haute; la barre du bas se resserre */
-  .fil-barre{padding:4px 6px;gap:4px;}
-  .fil-onglet{padding:4px 8px;}
+  .fil-barre{padding:7px 6px 3px;gap:4px;}
   .fil-corps{height:clamp(200px,50vh,440px);}
   .fil-titre{padding:6px 10px 0;}
   .fil-liste{padding:6px 10px;}
@@ -537,12 +493,11 @@ button,select{font-family:inherit;}
   .verrou{padding:20px 18px;}
   .ligne-t{padding:8px 10px;}
 }
-/* Écran de moins de 360 px : les boutons de la rangée 2 se resserrent (🔨 et 📋 gardent 40 px); ce qui ne tient pas
-   encore passe à la ligne au lieu de sortir de l'écran. */
+/* Écran de moins de 360 px : les boutons de la rangée 2 se resserrent; ce qui ne tient pas encore passe à la ligne au
+   lieu de sortir de l'écran. */
 @container (width<360px){
   .header-outils{flex-wrap:wrap;gap:6px 4px;}
   .header-outils button:not(.icon-btn),.header-outils #links-wrap{padding-left:5px;padding-right:5px;}
-  .header-outils .vue-btn{min-width:40px;}
 }
 /* Clavier ouvert dans la discussion, sur un écran bas : la bande des boutons et le titre de la discussion s'effacent le
    temps de la saisie, et la discussion se resserre sur la hauteur qui reste, la zone de saisie au-dessus du clavier. */
@@ -568,8 +523,11 @@ button,select{font-family:inherit;}
   .nav-label{font-size:12px;}
   .nav-btn{padding:10px;font-size:14px;}
   .nav-home{padding:10px;font-size:14px;}
-  .nav-prog{font-size:12px;}
-  .fil-onglet{min-height:40px;padding:6px 14px;font-size:13px;}
+  .poignee-fil{min-height:40px;font-size:13px;}
+  .barre-docs{flex-basis:46px;}
+  .barre-docs button{width:40px;height:44px;font-size:18px;}
+  .poignee{flex-basis:40px;font-size:13px;}
+  .sp-titre{min-height:40px;}
   .comp-nav{min-height:40px;padding:6px 10px;font-size:13.5px;}
   .ec-head{padding-top:9px;padding-bottom:9px;}
   .ec-code,.el-code,.ec-pts,.ind-pts,.ec-chevron{font-size:12px;}
@@ -582,7 +540,7 @@ button,select{font-family:inherit;}
   .pouce .pouce-ic{opacity:.7;}
   .pouce small{font-size:12.5px;}
   .plus-ajout{min-width:38px;min-height:34px;font-size:15px;}
-  .bulle input,.note-ecart input,.bulle.ajout select{font-size:16px;min-height:42px;padding:8px 10px;}
+  .bulle input,.note-ecart input,.ligne-c input,.ligne-c select{font-size:16px;min-height:42px;padding:8px 10px;}
   .btn-p,.btn-s{min-height:40px;padding:6px 14px;font-size:13.5px;}
   .sp-editing-badge{font-size:13px;padding:0 0 0 10px;}
   .sp-close{min-width:40px;min-height:36px;font-size:18px;}
@@ -608,13 +566,13 @@ button,select{font-family:inherit;}
   .composer button{min-height:44px;font-size:13px;}
   .modal input,.modal select,.verrou input{font-size:16px;min-height:44px;}
   .modal-actions button,.verrou button{min-height:44px;}
-  .ident-onglets button{min-height:44px;}
+
   .notifs-tete .val-lien{min-height:36px;font-size:13px;}
   .notif{padding:10px 12px;}
   .notif small{font-size:12px;}
   #encadre-fermer{min-width:40px;min-height:40px;font-size:15px;}
   .encadre-def,.encadre-etat{font-size:13px;}
-  .ligne-t .comp-t,.ligne-t .detail,.tag-t,.section-t .aide{font-size:12.5px;}
+  .ligne-t .comp-t,.ligne-t .detail,.tag-t,.ligne-c,.ligne-c .detail{font-size:12.5px;}
   .raisons{font-size:13px;}
 }
 `;
@@ -647,7 +605,7 @@ const GABARIT=`<div class="racine">
     </div>
     <span class="reglages" id="reglages"><button id="btn-reglages" aria-expanded="false" aria-controls="menu-reglages">⋮</button><div class="menu-reglages" id="menu-reglages" hidden></div></span>
     <div class="header-outils">
-    <div class="vues" role="group"><button class="vue-btn" id="vue-prog" data-vue="prog"></button><button class="vue-btn" id="vue-ref" data-vue="ref"></button></div>
+
     <div class="header-actions">
       <label id="links-wrap">
         <input type="checkbox" id="crossref-cb"><span id="links-label"></span>
@@ -665,20 +623,25 @@ const GABARIT=`<div class="racine">
   <div class="body-row">
     <nav class="left-nav" id="left-nav">
       <button class="nav-home" id="nav-home"></button>
+      <button class="nav-home" id="nav-membres"></button>
       <div class="nav-divider"></div>
       <div class="nav-label" id="nav-label-comp"></div>
       <div id="nav-comps"></div>
     </nav>
     <div class="main-area">
       <div class="content-row" id="content-row">
+        <button type="button" class="poignee gauche" id="poignee-prog" hidden></button>
         <div class="pane" id="pane-prog"><div class="sheet doc-prog" id="sheet-prog"></div></div>
+        <div class="barre-docs" id="barre-docs"><button type="button" id="fermer-prog">‹</button><button type="button" id="fermer-ref">›</button></div>
         <div class="pane" id="pane-ref"><div class="sheet doc-ref" id="sheet-ref"></div></div>
+        <button type="button" class="poignee droite" id="poignee-ref" hidden></button>
       </div>
       <div class="page-traiter" id="page-traiter" hidden></div>
+      <div class="page-traiter" id="page-membres" hidden></div>
       <div class="fil" id="fil">
         <div class="fil-barre">
           <button class="comp-nav" id="fil-prev"></button>
-          <div class="fil-onglets"><button class="fil-onglet" data-onglet="discussion" id="onglet-discussion"></button><button class="fil-onglet" data-onglet="ecarts" id="onglet-ecarts" hidden></button></div>
+          <button type="button" class="poignee-fil" data-onglet="discussion" id="onglet-discussion" aria-controls="fil-corps"></button>
           <button class="comp-nav" id="fil-next"></button>
         </div>
         <div class="fil-corps" id="fil-corps" hidden>
@@ -706,90 +669,91 @@ const GABARIT=`<div class="racine">
 <div class="modal-fond" id="ident" hidden>
   <form class="modal" id="ident-form">
     <div class="bascule" id="ident-langue" role="group" aria-label="Langue / Language" hidden><button type="button" class="lang-choice" data-lang="fr" lang="fr">Français</button><button type="button" class="lang-choice" data-lang="en" lang="en">English</button></div>
-    <div class="ident-onglets" id="ident-onglets" role="tablist" hidden><button type="button" role="tab" data-mode-ident="connecter"></button><button type="button" role="tab" data-mode-ident="creer"></button></div>
+
     <h2 id="ident-titre"></h2>
     <p id="ident-expl"></p>
     <label id="ident-nom-wrap"><span id="ident-l-nom"></span><input id="ident-nom" autocomplete="name" maxlength="60" required></label>
     <label id="ident-courriel-wrap"><span id="ident-l-courriel"></span><input id="ident-courriel" type="email" autocomplete="email" maxlength="120"></label>
     <label id="ident-centre-wrap" hidden><span id="ident-l-centre"></span><select id="ident-centre"></select></label>
+    <label id="ident-nouveau-wrap" hidden><span id="ident-l-nouveau"></span><input id="ident-nouveau" maxlength="80" autocomplete="organization"></label>
     <label id="ident-mdp-wrap" hidden><span id="ident-l-mdp"></span><input id="ident-mdp" type="password" autocomplete="current-password" maxlength="100"></label>
     <p class="ident-erreur" id="ident-erreur" role="alert" hidden></p>
-    <div class="modal-actions"><button type="button" class="lien" id="ident-mode"></button><button type="button" class="lien" id="ident-deconnexion" hidden></button><button type="button" id="ident-annuler"></button><button type="submit" id="ident-ok"></button></div>
+    <div class="modal-actions"><button type="button" class="lien" id="ident-deconnexion" hidden></button><button type="button" id="ident-annuler"></button><button type="submit" id="ident-ok"></button></div>
   </form>
 </div>
 </div>`;
 
 const UI={
- fr:{retirerProbable:"Retirer la mention « probable » : le lien est gardé",ouvrirComp:"Ouvrir cette compétence",soutien:"Pour du soutien :",proposer:"Proposer",choisirElement:"— Élément —",plusTip:"Proposer un ajout",modifie:"modifié",supprimer:"Supprimer",supprimerMsg:"Supprimer mon message",modifierMsg:"Modifier mon message",mesPropsTip:"Superposer mes propositions aux liens",mesProps:"Mes propositions",proposerRetrait:"Proposer ce retrait",proposerAjout:"Proposer cet ajout",proposeLe:"Proposée le {d}",title:'DEP 5319 — Charpenterie-menuiserie',tagline:"Outil de concordance — Référentiel d'évaluation 5319 & Programme d'études",ref:"Référentiel d'évaluation",prog:"Programme d'études",nav:'Navigation',links:'Liens',linksTip:"Afficher les liens vers l'autre document",undo:'Annuler (Ctrl+Z)',nothing:'Rien à annuler',theme:"Inverser l'affichage",comp:'Compétences',refShort:'📋 Référentiel',progShort:'🔨 Programme',vueRefTip:"Afficher ou masquer le référentiel d'évaluation",vueProgTip:"Afficher ou masquer le programme d'études",home:'⌂ Accueil',yesno:'Oui / Non',pts:'pts',noSubs:'Aucun sous-critère.',tol:'Tolérance :',seuil:'Seuil de réussite :',el:'Él.',global:'Global',situ:'Compétence traduite en situation',lang:'EN',
+ fr:{retirerProbable:"Retirer la mention « probable » : le lien est gardé",ouvrirComp:"Ouvrir cette compétence",soutien:"Pour du soutien :",proposer:"Proposer",plusTip:"Proposer un ajout",modifie:"modifié",supprimer:"Supprimer",supprimerMsg:"Supprimer mon message",modifierMsg:"Modifier mon message",title:'DEP 5319 — Charpenterie-menuiserie',tagline:"Outil de concordance — Référentiel d'évaluation 5319 & Programme d'études",ref:"Référentiel d'évaluation",prog:"Programme d'études",nav:'Navigation',links:'Liens',linksTip:"Afficher les liens vers l'autre document",undo:'Annuler (Ctrl+Z)',nothing:'Rien à annuler',theme:"Inverser l'affichage",comp:'Compétences',fermerProg:"Refermer le programme d'études",fermerRef:"Refermer le référentiel d'évaluation",home:'⌂ Accueil',yesno:'Oui / Non',pts:'pts',noSubs:'Aucun sous-critère.',tol:'Tolérance :',seuil:'Seuil de réussite :',el:'Él.',global:'Global',situ:'Compétence traduite en situation',lang:'EN',
   typeSitu:'Situation',typeComp:'Comportement',duree:'Durée :',heures:'{n} heures',hCourt:'{n} h',
-  editMaitre:'Modifier les liens de ce critère',editCentre:"Proposer des changements aux liens de ce critère",editClose:"Fermer l'édition",
+  editMaitre:'Modifier les liens de ce critère',editClose:"Fermer l'édition",
   
   probableCourt:'probable',
-  legProbable:'probable',legAttente:"en attente d'une décision",legTrace:"proposition",
+  legAttente:"en attente d'une décision",
   tipProbable:"Mention « probable » : les administrateurs n'ont pas encore tranché ce lien.",
   pourTip:'Je suis pour',contreTip:'Je suis contre',personne:'personne',
-  nPour:'pour',nContre:'contre',nCentre:'centre',nCentres:'centres',
+  nPour:'pour',nContre:'contre',
   raisonContre:'Raison du vote contre',
-  traceRetrait:"Proposition de retrait de {n}, le {d}{s} : {r}",traceAjout:"Ajout proposé par {n}, le {d}{s} : {r}",
+  traceAjout:"Ajout proposé par {n}, le {d}{s} : {r}",
   
   
-  etatAttente:"en attente",etatClasse:"non retenue par {n}, le {d}",
-  notreCommentaire:"Mon commentaire",raisonAjout:"Raison de l'ajout",raisonRetrait:"Raison du retrait",
+  raisonAjout:"Raison de l'ajout",
   retirerLien:'Retirer',annuler:'Annuler',enregistrer:'Enregistrer',
   maintenir:'Maintenir',
-  adopter:'Adopter',adopterAjout:"Adopter",classer:"Ne pas retenir",classerTip:"La proposition reste visible, avec la mention « non retenue ».",
+  adopterAjout:"Adopter",classer:"Ne pas retenir",classerTip:"La proposition reste visible, avec la mention « non retenue ».",
   discussion:'Discussion',discTitre:'Discussion de la compétence {c}',
-  videDiscussion:'Aucun message pour l\'instant.',videEcarts:"Vous n'avez aucune proposition dans cette compétence.",
+  videDiscussion:'Aucun message pour l\'instant.',
   composerPh:'Écrire un message… (@ pour mentionner, Ctrl+Entrée pour envoyer)',envoyer:'Envoyer',critere:'Critère :',element:'Élément :',
-  eContre:'{n} a voté contre ce lien.',eCommentaire:"{n} a modifié son commentaire.",eCommentaireLien:"{n} a commenté ce lien.",cite:'« {t} »',eBloque:"Trop d'essais : réessayez dans 15 minutes.",
+  eContre:'{n} a voté contre ce lien.',cite:'« {t} »',eBloque:"Trop d'essais : réessayez dans 15 minutes.",
   eAjout:'{n} a ajouté le lien.',eRetrait:'{n} a retiré le lien.',eRemis:'{n} a remis le lien.',eMaintenu:'{n} a maintenu le lien.',eAdopte:"{n} a adopté la proposition de {c}.",eClasse:"{n} ne retient pas la proposition de {c}.",eEcartAjout:"{n} propose d'ajouter ce lien.",
   traiter:'À traiter',traiterTitre:'À traiter',reglages:'Réglages',
   traiterS1:'Liens contestés',
   traiterS2:"Ajouts proposés",
-  traiterVide:'Rien à traiter pour le moment.',retirePar:"proposition de retrait de {c}",ajoutePar:"ajout proposé par {c}",raisons:'Raisons :',fil:'Détail',fermer:'Fermer',encMaitre:'Votes :',encHors:'Lien retiré',encAjout:'Ajout proposé',encPar:'par {c}',encAttente:"en attente d'une décision des administrateurs",encVide:'Aucun geste ni commentaire sur ce lien.',classeCourt:"non retenue",
+  traiterVide:'Rien à traiter pour le moment.',ajoutePar:"ajout proposé par {c}",fermer:'Fermer',encMaitre:'Votes :',encHors:'Lien retiré',encAjout:'Ajout proposé',encPar:'par {c}',encAttente:"en attente d'une décision des administrateurs",encVide:'Aucun geste ni commentaire sur ce lien.',classeCourt:"non retenue",
+  membres:'Membres',sansCentre:'Sans centre',nCompte:'{n} compte',nComptes:'{n} comptes',renommer:'Renommer',fusionnerAvec:'Fusionner avec…',fusionner:'Fusionner',confirmerFusion:'Fusionner « {a} » dans « {b} »?',eDoublon:'Un autre centre porte déjà ce nom.',
   notifications:'Notifications',toutLu:'Tout marquer comme lu',aucuneNotif:'Aucune notification.',
   nMention:'{n} a mentionné votre nom dans la discussion de {comp}.',nDecisionMaintenu:'{n} a maintenu le lien {l} ({comp}), contre lequel vous avez voté.',nDecisionRetrait:'{n} a retiré le lien {l} ({comp}), contre lequel vous avez voté.',
   nAdopte:"{n} a adopté votre proposition : {l} ({comp}).",nClasse:"{n} n'a pas retenu votre proposition : {l} ({comp}).",nRemis:'Le lien {l} ({comp}) est remis : votre vote compte de nouveau.',
-  sIdentifier:'👤 Se connecter',deconnecter:'Se déconnecter',identTitre:'Identification',creerTitre:'Créer un compte',connecterTitre:'Se connecter',monCompte:'Mon compte',roleAdmin:'administrateur',identExpl:"Votre nom et votre centre sont visibles par les membres du groupe. Votre courriel n'est vu que par la personne responsable du projet : il sert à vous reconnaître quand vous revenez et à vous écrire au sujet du projet. Ces renseignements sont compilés dans une feuille Google à accès privé, et ils seront effacés à la fin du projet.",connecterExpl:'Entrez le nom et le courriel utilisés à la création de votre compte.',compteActif:'Compte actif :',identExplLocal:'Votre nom accompagne chaque modification et chaque message. En mode local, tout reste dans ce navigateur.',identNom:'Votre nom',identCourriel:'Votre courriel',identCentre:'Votre centre',choisirCentre:'— Choisir votre centre —',identMdp:'Mot de passe administrateur',creer:'Créer mon compte',connecter:'Se connecter',modeConnecter:"J'ai déjà un compte",modeCreer:'Créer un compte',
-  eNom:'Ce courriel est déjà associé à un autre nom. Entrez le nom utilisé à la création du compte.',eInconnu:"Aucun compte n'utilise ce courriel. Vérifiez-le, ou créez un compte.",eCourriel:"Ce courriel n'est pas valide.",eCentre:'Choisissez votre centre.',eReseau:'Impossible de joindre la feuille Google. Réessayez dans un moment.',eMdpRequis:'Ce compte est un compte administrateur : entrez son mot de passe.',eMdp:'Mot de passe refusé.',
+  sIdentifier:'👤 Se connecter',deconnecter:'Se déconnecter',creerTitre:'Créer un compte',connecterTitre:'Se connecter',monCompte:'Mon compte',roleAdmin:'administrateur',identExpl:"Votre nom et votre centre sont visibles par les membres du groupe. Votre courriel n'est vu que par la personne responsable du projet : il sert à vous reconnaître quand vous revenez et à vous écrire au sujet du projet. Ces renseignements sont compilés dans une feuille Google à accès privé, et ils seront effacés à la fin du projet.",compteActif:'Compte actif :',identNom:'Votre nom',identCourriel:'Votre courriel',identCentre:'Pour quel centre?',choisirCentre:'— Choisir votre centre —',ajouterCentre:'Ajouter un centre…',nomCentre:'Nom du centre',identMdp:'Mot de passe administrateur',creer:'Créer mon compte',connecter:'Se connecter',
+  eNom:'Ce courriel est déjà associé à un autre nom. Entrez le nom utilisé à la création du compte.',eCourriel:"Ce courriel n'est pas valide.",eCentre:'Choisissez votre centre.',eReseau:'Impossible de joindre la feuille Google. Réessayez dans un moment.',eMdpRequis:'Ce compte est un compte administrateur : entrez son mot de passe.',eMdp:'Mot de passe refusé.',
   verrouTitre:'DEP 5319 — Outil de concordance',verrouExpl:"Cet outil est réservé à la communauté de pratique. Entrez le code d'accès reçu avec votre invitation.",verrouCode:"Code d'accès",verrouOk:"Ouvrir l'outil",verrouRefuse:"Code d'accès refusé.",verrouReseau:'Impossible de joindre la feuille Google. Vérifiez votre connexion, puis réessayez.',verrouChargement:'Chargement…',reessayer:'Réessayer',
-  sLocal:'Mode local',sOk:'✓ À jour',sEnvoi:'Enregistrement…',sChargement:'Chargement…',sErreur:'⚠ Non enregistré',sTitreFeuille:"Les modifications sont enregistrées dans la feuille Google partagée de l'équipe.",sTitreLocal:'Les modifications sont enregistrées dans ce navigateur seulement.',
-  bReseau:'Impossible de joindre la feuille Google : la dernière modification n’a peut-être pas été enregistrée.',bCompte:'Votre compte est introuvable dans la feuille : reconnectez-vous.',bAdmin:'Mot de passe administrateur refusé : reconnectez-vous.',bCentre:"Ce geste est réservé à l'auteur de la proposition.",bRecent:"Un geste plus récent d'un autre administrateur sur ce lien empêche l'annulation."},
- en:{retirerProbable:"Remove the \"probable\" mention: the link is kept",ouvrirComp:"Open this competency",soutien:"For support:",proposer:"Propose",choisirElement:"— Element —",plusTip:"Propose an addition",modifie:"edited",supprimer:"Delete",supprimerMsg:"Delete my message",modifierMsg:"Edit my message",mesPropsTip:"Show my proposals over the links",mesProps:"My proposals",proposerRetrait:"Propose this removal",proposerAjout:"Propose this addition",proposeLe:"Proposed {d}",title:'DVS 5819 — Carpentry',tagline:'Cross-reference tool — Specifications for Evaluation 5819 & Program of Study',ref:'Specifications for Evaluation',prog:'Program of Study',nav:'Navigation',links:'Links',linksTip:'Show links to the other document',undo:'Undo (Ctrl+Z)',nothing:'Nothing to undo',theme:'Invert display',comp:'Competencies',refShort:'📋 Specifications',progShort:'🔨 Program',vueRefTip:'Show or hide the specifications for evaluation',vueProgTip:'Show or hide the program of study',home:'⌂ Home',yesno:'Yes / No',pts:'marks',noSubs:'No sub-criteria.',tol:'Tolerance:',seuil:'Passing threshold:',el:'El.',global:'Overall',situ:'Competency translated into a situation',lang:'FR',
+  sOk:'✓ À jour',sEnvoi:'Enregistrement…',sChargement:'Chargement…',sErreur:'⚠ Non enregistré',sTitreFeuille:"Les modifications sont enregistrées dans la feuille Google partagée de l'équipe.",
+  bReseau:'Impossible de joindre la feuille Google : la dernière modification n’a peut-être pas été enregistrée.',bCompte:'Votre compte est introuvable dans la feuille : reconnectez-vous.',bAdmin:'Mot de passe administrateur refusé : reconnectez-vous.',bRecent:"Un geste plus récent d'un autre administrateur sur ce lien empêche l'annulation."},
+ en:{retirerProbable:"Remove the \"probable\" mention: the link is kept",ouvrirComp:"Open this competency",soutien:"For support:",proposer:"Propose",plusTip:"Propose an addition",modifie:"edited",supprimer:"Delete",supprimerMsg:"Delete my message",modifierMsg:"Edit my message",title:'DVS 5819 — Carpentry',tagline:'Cross-reference tool — Specifications for Evaluation 5819 & Program of Study',ref:'Specifications for Evaluation',prog:'Program of Study',nav:'Navigation',links:'Links',linksTip:'Show links to the other document',undo:'Undo (Ctrl+Z)',nothing:'Nothing to undo',theme:'Invert display',comp:'Competencies',fermerProg:'Close the program of study',fermerRef:'Close the specifications for evaluation',home:'⌂ Home',yesno:'Yes / No',pts:'marks',noSubs:'No sub-criteria.',tol:'Tolerance:',seuil:'Passing threshold:',el:'El.',global:'Overall',situ:'Competency translated into a situation',lang:'FR',
   typeSitu:'Situation',typeComp:'Behaviour',duree:'Duration:',heures:'{n} hours',hCourt:'{n} h',
-  editMaitre:'Edit the links of this criterion',editCentre:"Propose changes to the links of this criterion",editClose:'Close editing',
+  editMaitre:'Edit the links of this criterion',editClose:'Close editing',
   
   probableCourt:'probable',
-  legProbable:'probable',legAttente:"awaiting a decision",legTrace:"proposal",
+  legAttente:"awaiting a decision",
   tipProbable:'"Probable": the administrators have not yet ruled on this link.',
   pourTip:'I agree',contreTip:'I disagree',personne:'nobody',
-  nPour:'for',nContre:'against',nCentre:'centre',nCentres:'centres',
+  nPour:'for',nContre:'against',
   raisonContre:'Reason for voting against',
-  traceRetrait:"Removal proposed by {n}, {d}{s}: {r}",traceAjout:"Addition proposed by {n}, {d}{s}: {r}",
+  traceAjout:"Addition proposed by {n}, {d}{s}: {r}",
   
   
-  etatAttente:"awaiting a decision",etatClasse:"not retained by {n}, {d}",
-  notreCommentaire:"My comment",raisonAjout:"Reason for adding",raisonRetrait:"Reason for removing",
+  raisonAjout:"Reason for adding",
   retirerLien:'Remove',annuler:'Cancel',enregistrer:'Save',
   maintenir:'Keep',
-  adopter:'Adopt',adopterAjout:"Adopt",classer:"Do not retain",classerTip:"The proposal stays visible, marked \"not retained\".",
+  adopterAjout:"Adopt",classer:"Do not retain",classerTip:"The proposal stays visible, marked \"not retained\".",
   discussion:'Discussion',discTitre:'{c} discussion',
-  videDiscussion:'No messages yet.',videEcarts:"You have no proposals in this competency.",
+  videDiscussion:'No messages yet.',
   composerPh:'Write a message… (@ to mention, Ctrl+Enter to send)',envoyer:'Send',critere:'Criterion:',element:'Element:',
-  cite:'"{t}"',eBloque:'Too many attempts: try again in 15 minutes.',eContre:'{n} voted against this link.',eCommentaire:"{n} edited their comment.",eCommentaireLien:"{n} commented on this link.",
+  cite:'"{t}"',eBloque:'Too many attempts: try again in 15 minutes.',eContre:'{n} voted against this link.',
   eAjout:'{n} added the link.',eRetrait:'{n} removed the link.',eRemis:'{n} put the link back.',eMaintenu:'{n} kept the link.',eAdopte:"{n} adopted {c}'s proposal.",eClasse:"{n} did not retain {c}'s proposal.",eEcartAjout:"{n} proposes adding this link.",
   traiter:'To review',traiterTitre:'To review',reglages:'Settings',
   traiterS1:'Contested links',
   traiterS2:"Proposed additions",
-  traiterVide:'Nothing to review for now.',retirePar:"removal proposed by {c}",ajoutePar:"addition proposed by {c}",raisons:'Reasons:',fil:'Details',fermer:'Close',encMaitre:'Votes:',encHors:'Link removed',encAjout:'Proposed addition',encPar:'by {c}',encAttente:'awaiting a decision by the administrators',encVide:'No changes or comments on this link.',classeCourt:"not retained",
+  traiterVide:'Nothing to review for now.',ajoutePar:"addition proposed by {c}",fermer:'Close',encMaitre:'Votes:',encHors:'Link removed',encAjout:'Proposed addition',encPar:'by {c}',encAttente:'awaiting a decision by the administrators',encVide:'No changes or comments on this link.',classeCourt:"not retained",
+  membres:'Members',sansCentre:'No centre',nCompte:'{n} account',nComptes:'{n} accounts',renommer:'Rename',fusionnerAvec:'Merge with…',fusionner:'Merge',confirmerFusion:'Merge "{a}" into "{b}"?',eDoublon:'Another centre already has this name.',
   notifications:'Notifications',toutLu:'Mark all as read',aucuneNotif:'No notifications.',
   nMention:'{n} mentioned you in the {comp} discussion.',nDecisionMaintenu:'{n} kept the link {l} ({comp}), which you voted against.',nDecisionRetrait:'{n} removed the link {l} ({comp}), which you voted against.',
   nAdopte:"{n} adopted your proposal: {l} ({comp}).",nClasse:"{n} did not retain your proposal: {l} ({comp}).",nRemis:'The link {l} ({comp}) is back: your vote counts again.',
-  sIdentifier:'👤 Sign in',deconnecter:'Sign out',identTitre:'Identification',creerTitre:'Create an account',connecterTitre:'Sign in',monCompte:'My account',roleAdmin:'administrator',identExpl:'Your name and centre are visible to the members of the group. Your email is seen only by the project lead: it is used to recognize you when you come back and to write to you about the project. This information is kept in a private Google Sheet and will be deleted at the end of the project.',connecterExpl:'Enter the name and email you used to create your account.',compteActif:'Active account:',identExplLocal:'Your name is attached to each change and message. In local mode, everything stays in this browser.',identNom:'Your name',identCourriel:'Your email',identCentre:'Your centre',choisirCentre:'— Choose your centre —',identMdp:'Administrator password',creer:'Create my account',connecter:'Sign in',modeConnecter:'I already have an account',modeCreer:'Create an account',
-  eNom:'This email is already linked to another name. Enter the name used when the account was created.',eInconnu:'No account uses this email. Check it, or create an account.',eCourriel:'This email is not valid.',eCentre:'Choose your centre.',eReseau:'Unable to reach the Google Sheet. Try again in a moment.',eMdpRequis:'This is an administrator account: enter its password.',eMdp:'Password refused.',
+  sIdentifier:'👤 Sign in',deconnecter:'Sign out',creerTitre:'Create an account',connecterTitre:'Sign in',monCompte:'My account',roleAdmin:'administrator',identExpl:'Your name and centre are visible to the members of the group. Your email is seen only by the project lead: it is used to recognize you when you come back and to write to you about the project. This information is kept in a private Google Sheet and will be deleted at the end of the project.',compteActif:'Active account:',identNom:'Your name',identCourriel:'Your email',identCentre:'Which centre?',choisirCentre:'— Choose your centre —',ajouterCentre:'Add a centre…',nomCentre:'Centre name',identMdp:'Administrator password',creer:'Create my account',connecter:'Sign in',
+  eNom:'This email is already linked to another name. Enter the name used when the account was created.',eCourriel:'This email is not valid.',eCentre:'Choose your centre.',eReseau:'Unable to reach the Google Sheet. Try again in a moment.',eMdpRequis:'This is an administrator account: enter its password.',eMdp:'Password refused.',
   verrouTitre:'DVS 5819 — Cross-reference tool',verrouExpl:'This tool is reserved for the community of practice. Enter the access code you received with your invitation.',verrouCode:'Access code',verrouOk:'Open the tool',verrouRefuse:'Access code refused.',verrouReseau:'Unable to reach the Google Sheet. Check your connection, then try again.',verrouChargement:'Loading…',reessayer:'Retry',
-  sLocal:'Local mode',sOk:'✓ Up to date',sEnvoi:'Saving…',sChargement:'Loading…',sErreur:'⚠ Not saved',sTitreFeuille:"Changes are saved to the team's shared Google Sheet.",sTitreLocal:'Changes are saved in this browser only.',
-  bReseau:'Unable to reach the Google Sheet: the last change may not have been saved.',bCompte:'Your account cannot be found in the sheet: sign in again.',bAdmin:'Administrator password refused: sign in again.',bCentre:"This action is reserved for the author of the proposal.",bRecent:"A more recent change by another administrator on this link prevents the undo."}
+  sOk:'✓ Up to date',sEnvoi:'Saving…',sChargement:'Loading…',sErreur:'⚠ Not saved',sTitreFeuille:"Changes are saved to the team's shared Google Sheet.",
+  bReseau:'Unable to reach the Google Sheet: the last change may not have been saved.',bCompte:'Your account cannot be found in the sheet: sign in again.',bAdmin:'Administrator password refused: sign in again.',bRecent:"A more recent change by another administrator on this link prevents the undo."}
 };
 
 // Adresse de soutien, proposée avec toute erreur de connexion au compte.
@@ -804,7 +768,7 @@ function monter(host){
   R.innerHTML=`<style>${CSS}</style>${GABARIT}`;
   const $=id=>R.getElementById(id);
   const COMP_ORDER=D.ordre,COMPETENCES=D.competences;
-  const urlFeuille=host.getAttribute('feuille')||URL_FEUILLE,enLigne=!!urlFeuille;
+  const urlFeuille=host.getAttribute('feuille')||URL_FEUILLE;
   // Attribut feuille (page d'essai DEV) : code, compte et mot de passe gardés à part de ceux de la page de production.
   const pre=host.hasAttribute('feuille')?'dep5319dev_':'dep5319_';
   // Attribut dev : un bandeau « DEV » en haut de l'écran.
@@ -823,29 +787,28 @@ function monter(host){
   const montrer=(sel,bloc)=>{if(!empile())return;const n=R.querySelector(sel);if(n)n.scrollIntoView({block:bloc||'start',behavior:'smooth'});};
   let navOpen=!etroit(),crossRef=true;
   let vues={prog:true,ref:true};try{const v=JSON.parse(lire('vues'));if(v&&(v.prog||v.ref))vues={prog:!!v.prog,ref:!!v.ref};}catch(e){}
-  let version='';   // '' : la version maître (les participants n'éditent pas)
   let expandedEcs=new Set(),expandedEls=new Set(),collapsedInds=new Set(),selectedEc=null;
   let filOnglet=null,filJusteOuvert=false,encadre=null;   // encadre : le lien affiché par-dessus l'outil, {c, k}
-  let page='';   // '' : la compétence; 'traiter' : la liste des administrateurs
+  let page='';   // '' : la compétence; 'traiter' : la liste des administrateurs; 'membres' : les membres, par centre
   let journal=[],messages=[],votes=[],enAttente=[],msgAttente=[],voteAttente=[],annulAttente=[],undoStack=[],cache=null;
   // Compte : numéro de participant et courriel, gardés dans ce navigateur pour signer chaque envoi à la feuille.
   // Le mot de passe d'un administrateur y est aussi gardé après sa connexion.
   let nom=lire('nom')||'',code=lire('code')||'',centre=lire('centre')||'',participant=lire('participant')||'',courriel=lire('courriel')||'',role=lire('role')||'',mdp=lire('mdp')||'';
   let centres=[],participants=[];
-  let pret=!enLigne;   // les données de la feuille ont été reçues au moins une fois
+  let pret=false;   // les données de la feuille ont été reçues au moins une fois
   let sync='';   // '', 'chargement', 'envoi', 'erreur-compte', 'erreur-admin', 'erreur-centre', 'erreur-reseau'
-  let brouillons={};   // propositions en cours : {élément: {geste}} en attente de leur raison
   let msgEdition=null,msgSuppr=null;   // mon message en cours de modification {ts, texte}, ou à supprimer (ts)
   let ajoutOuvert=null,ajoutTexte='',ajoutEl='';   // le critère dont la boîte « Proposer un ajout » est ouverte
   let voteContre=null; // lien dont on écrit la raison d'un vote contre
   let notifsOuvert=false,vueActive='landing';
-  let enTel=false,reglagesOuvert=false;   // en-tête sur deux rangées (téléphone); menu ⋮ ouvert
-  let voteContreTexte='',commentairesEnCours={};   // saisie en cours, gardée d'un rendu à l'autre
-  const connecte=()=>enLigne?!!participant:!!nom;
-  const estAdmin=()=>!enLigne||(role==='administrateur'&&!!mdp&&!!participant);
-  const moi=()=>enLigne?participant:'local';
-  // Mes propositions : « p » + mon numéro. Les administrateurs modifient la version maître directement.
-  const maVersion=()=>enLigne&&participant&&role!=='administrateur'?'p'+participant:'';
+  let reglagesOuvert=false,pileRendu=null;   // menu ⋮ ouvert (en-tête du téléphone); documents empilés au dernier rendu
+  let voteContreTexte='';   // saisie en cours, gardée d'un rendu à l'autre
+  let centreEdition=null,centreFusion=null,centreErreur=null;   // section « Centres » de « À traiter » : {id, nom}, {de, vers}, {id, cle}
+  const connecte=()=>!!participant;
+  const estAdmin=()=>role==='administrateur'&&!!mdp&&!!participant;
+  const moi=()=>participant;
+  // Proposer un ajout : un participant connecté. Les administrateurs modifient la concordance au crayon.
+  const proposeur=()=>!!participant&&role!=='administrateur';
 
   const T=x=>x==null?'':(typeof x==='string'?x:(x[lang]||x.fr||''));
   const U=(k,p)=>{let s=UI[lang][k];if(p)Object.keys(p).forEach(n=>{s=s.split('{'+n+'}').join(p[n]);});return s;};
@@ -874,12 +837,13 @@ function monter(host){
     host.lang=lang;
     $('landing-title').textContent=U('title');$('landing-tag').textContent=U('tagline');
     $('nav-toggle').title=U('nav');$('links-label').textContent=' '+U('links');$('links-wrap').title=U('linksTip');
-    $('theme-btn').title=U('theme');$('nav-label-comp').textContent=U('comp');$('nav-home').textContent=U('home');
-    libVues();$('vue-prog').title=U('vueProgTip');$('vue-ref').title=U('vueRefTip');
+    $('theme-btn').title=U('theme');$('nav-label-comp').textContent=U('comp');$('nav-home').textContent=U('home');$('nav-membres').textContent=U('membres');
+    [['fermer-prog','fermerProg'],['fermer-ref','fermerRef']].forEach(([id,k])=>{$(id).title=U(k);$(id).setAttribute('aria-label',U(k));});
+    $('poignee-prog').innerHTML=`<span>🔨 ${esc(U('prog'))}</span>`;$('poignee-ref').innerHTML=`<span>📋 ${esc(U('ref'))}</span>`;
     $('btn-reglages').title=U('reglages');$('btn-reglages').setAttribute('aria-label',U('reglages'));
     
     majIdent();
-    $('ident-l-nom').textContent=U('identNom');$('ident-l-courriel').textContent=U('identCourriel');$('ident-l-centre').textContent=U('identCentre');$('ident-l-mdp').textContent=U('identMdp');
+    $('ident-l-nom').textContent=U('identNom');$('ident-l-courriel').textContent=U('identCourriel');$('ident-l-centre').textContent=U('identCentre');$('ident-l-nouveau').textContent=U('nomCentre');$('ident-l-mdp').textContent=U('identMdp');
     $('ident-annuler').textContent=U('annuler');
     $('composer-txt').placeholder=U('composerPh');$('composer-ok').textContent=U('envoyer');
     $('lang-btn').textContent=U('lang');$('lang-btn').title=lang==='fr'?'Switch to English':'Passer en français';
@@ -896,26 +860,13 @@ function monter(host){
   let versionFeuille=null,lectureComplete=0;
   const RELECTURE_MS=600000;
   function reponse(r){if(!r.ok)throw new Error('reseau');return r.json().then(x=>{if(!x||!x.ok)throw new Error(x&&x.erreur||'reseau');if(x.inchange)return {inchange:true,version:x.version};return {journal:x.journal||[],messages:x.messages||[],votes:x.votes||[],centres:x.centres||[],participants:x.participants||[],compte:x.compte,version:x.version};});}
-  const local=k=>JSON.parse(lire(k)||'[]');
   const poster=b=>fetch(urlFeuille,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({code,...b})}).then(reponse);
-  const backend=enLigne?{
+  const backend={
     charger:v=>fetch(urlFeuille+(urlFeuille.includes('?')?'&':'?')+'code='+encodeURIComponent(code)+(v!=null?'&version='+encodeURIComponent(v):'')+'&t='+Date.now()).then(reponse),
     ajouter:p=>poster({participant,courriel,motDePasse:mdp,...p}),
-    compte:c=>poster({compte:c})
-  }:{
-    charger:()=>Promise.resolve().then(()=>({journal:local('journal'),messages:local('messages'),votes:local('votes')})),
-    ajouter:p=>Promise.resolve().then(()=>{
-      const ts=new Date().toISOString(),sig={nom,centre:'',participant:'local'};
-      // Ctrl+Z : la ligne du geste est effacée, comme dans la feuille.
-      if(p.annuler)garder('journal',JSON.stringify(local('journal').filter(x=>!p.annuler.some(a=>a.ts===x.ts&&a.comp===x.comp&&a.ec===x.ec&&a.el===x.el))));
-      if(p.lignes)garder('journal',JSON.stringify(local('journal').concat(p.lignes.map(l=>({ts,comp:l.comp,ec:l.ec,el:l.el,geste:l.geste,...sig})))));
-      const ms=(p.messages||[]).map(m=>({ts,comp:m.comp,cible:m.cible||'',el:m.el||'',version:m.version||'',type:m.type||'',texte:m.texte,ref:m.ref||'',...sig}));
-      (p.lignes||[]).forEach(l=>{if(l.geste==='proposé')ms.push({ts,comp:l.comp,cible:l.ec,el:l.el,version:'p'+sig.participant,type:'ecart',texte:l.raison,ref:'',...sig});});
-      (p.votes||[]).forEach(v=>{if(v.sens==='contre')ms.push({ts,comp:v.comp,cible:v.ec,el:v.el,version:'',type:'contre',texte:v.raison,...sig});});
-      if(ms.length)garder('messages',JSON.stringify(local('messages').concat(ms)));
-      if(p.votes)garder('votes',JSON.stringify(local('votes').concat(p.votes.map(v=>({ts,comp:v.comp,ec:v.ec,el:v.el,sens:v.sens,...sig})))));
-      return {journal:local('journal'),messages:local('messages'),votes:local('votes')};
-    })
+    compte:c=>poster({compte:c}),
+    // Centres (administrateurs) : {renommer: {id, nom}} ou {fusionner: {de, vers}}.
+    centres:op=>poster({participant,courriel,motDePasse:mdp,centres:op})
   };
   // Une requête à la fois : une réponse plus ancienne ne peut pas écraser une plus récente.
   let file=Promise.resolve();
@@ -924,7 +875,7 @@ function monter(host){
     const m=e.message;
     if(m==='compte'){participant='';role='';mdp='';['participant','role','mdp'].forEach(oublier);return 'erreur-compte';}
     if(m==='admin'||m==='bloque'){mdp='';oublier('mdp');return 'erreur-admin';}
-    if(m==='proposition')return 'erreur-centre';
+
     if(m==='recent')return 'erreur-recent';
     if(m==='code'){const motif=code?'verrouRefuse':'verrouCode';code='';oublier('code');afficherVerrou(motif);return '';}
     return 'erreur-reseau';
@@ -936,7 +887,7 @@ function monter(host){
     if(d.centres)centres=d.centres;
     if(d.participants)participants=d.participants;
     // Le centre, le nom et le rôle de la personne connectée suivent la feuille : une correction s'applique aussitôt.
-    const moiF=enLigne&&participant&&participants.find(p=>p.id===participant);
+    const moiF=participant&&participants.find(p=>p.id===participant);
     if(moiF){
       if(moiF.centre!==centre){centre=moiF.centre;garder('centre',centre);}
       if(moiF.nom!==nom){nom=moiF.nom;garder('nom',nom);}
@@ -1014,7 +965,7 @@ function monter(host){
     }).then(ok=>{enAttente=enAttente.filter(x=>!L.includes(x));msgAttente=msgAttente.filter(x=>!M.includes(x));voteAttente=voteAttente.filter(x=>!V.includes(x));annulAttente=annulAttente.filter(x=>!A.includes(x));cache=null;render();return ok;}));
   }
   function identifie(suite){if(connecte())return true;ouvrirIdentite(suite);return false;}
-  const presentDans=(st,v,k)=>!!st.maitre[k];
+
   // Gestes des administrateurs : [{comp?, ec, el, geste}]. Chacun s'empile pour Ctrl+Z, qui fait effacer sa ligne du
   // Journal, retrouvée par son horodatage.
   function gesteAdmin(lignes){
@@ -1028,7 +979,7 @@ function monter(host){
       updateUndoBtn();
     });
   }
-  function modifierLiens(lignes){gesteAdmin(lignes);}
+
   function undo(){
     if(!estAdmin())return;
     const u=undoStack[undoStack.length-1];if(!u||!u.refs||u.enCours){updateUndoBtn();return;}
@@ -1050,7 +1001,7 @@ function monter(host){
   // Proposer un ajout : la ligne de la proposition, sa raison (dans la discussion) et le 👍 de son auteur.
   function proposerAjout(ec,el,raison){
     if(!identifie(()=>proposerAjout(ec,el,raison)))return;
-    const v=maVersion();if(!v)return;
+    if(!proposeur())return;
     envoyer({lignes:[{comp:curComp,ec,el,geste:'proposé',raison}],votes:[{comp:curComp,ec,el,sens:'pour'}]}).then(ok=>{if(!ok&&!ajoutOuvert){ajoutOuvert=ec;ajoutEl=el;ajoutTexte=decoderMentions(raison);render();}});
   }
   // Décisions des administrateurs (aussi depuis la liste « À traiter », pour une autre compétence). Une seule
@@ -1062,25 +1013,25 @@ function monter(host){
   function classer(c,k){const [ec,el]=deK(k);gesteAdmin([{comp:c,ec,el,geste:'non retenu'}]);}
 
   // ---- État d'une compétence ----
-  // Version maître : les liens proposés, puis les gestes du Journal, dans l'ordre. Ajouts proposés (ecarts, par version
-  // « p » + numéro de leur auteur) : un seul par lien; une proposition vit tant qu'au moins une personne l'appuie d'un
-  // 👍 et que la version maître ne contient pas le lien. Ajouté ou adopté sur un lien qui a une proposition l'adopte.
+  // La concordance : les liens proposés à la génération, puis les gestes du Journal, dans l'ordre. Ajouts proposés
+  // (props, par lien) : un seul par lien; une proposition vit tant qu'au moins une personne l'appuie d'un 👍 et que la
+  // concordance ne contient pas le lien. Ajouté ou adopté sur un lien qui a une proposition l'adopte.
   // Confirmé retire seulement la mention « probable »; maintenu tranche seulement les votes contre. Les lignes que
   // Ctrl+Z fait effacer (annulAttente) ne comptent déjà plus.
   function etatComp(c){
     if(!cache)cache={};
     if(cache[c])return cache[c];
     const C=COMPETENCES[c],ecs=new Set(C.ec.map(e=>e.id)),els=new Set(C.els.map(e=>e.id));
-    const maitre={},probable=new Set(),decision={},retireAvant=new Set(),ecarts={},evts=[],annulees=[];
+    const maitre={},probable=new Set(),decision={},retireAvant=new Set(),props={},evts=[],annulees=[];
     Object.entries(C.defaultLinks||{}).forEach(([ec,m])=>Object.entries(m).forEach(([el,s])=>{const k=K(ec,el);maitre[k]=true;if(s!=='fort')probable.add(k);}));
     const valide=x=>x.comp===c&&ecs.has(x.ec)&&els.has(x.el);
     const lignes=journal.concat(enAttente).filter(x=>valide(x)&&!annulAttente.includes(cleGeste(x)));
-    const proposition=k=>{for(const cv of Object.keys(ecarts))if(ecarts[cv][k])return cv;return '';};
+
     // Appui d'un lien juste avant t : le dernier vote de chaque personne avant t, dont au moins un 👍.
-    const votesC=votes.concat(voteAttente).filter(x=>valide(x)&&!(enLigne&&participants.length&&!participants.some(p=>p.id===x.participant)));
+    const votesC=votes.concat(voteAttente).filter(x=>valide(x)&&!(participants.length&&!participants.some(p=>p.id===x.participant)));
     const appuye=(k,t,depuis)=>{const d={};votesC.forEach(x=>{if(x.ts<t&&x.ts>=depuis&&K(x.ec,x.el)===k)d[x.participant]=x.sens;});return Object.values(d).includes('pour');};
     // Une proposition qui disparaît faute d'appui quitte la discussion, avec sa raison et la décision de ne pas la retenir.
-    const eteindre=(cv,k,t)=>{const p=ecarts[cv][k];p.evt.masque=true;if(p.evtClasse)p.evtClasse.masque=true;annulees.push({v:cv,k,de:p.x.ts,a:t});delete ecarts[cv][k];};
+    const eteindre=(k,t)=>{const p=props[k];p.evt.masque=true;if(p.evtClasse)p.evtClasse.masque=true;annulees.push({k,de:p.x.ts,a:t});delete props[k];};
     lignes.forEach(x=>{
       const k=K(x.ec,x.el),g=x.geste,attente=enAttente.includes(x);
       if(g==='confirmé'){probable.delete(k);return;}
@@ -1092,42 +1043,41 @@ function monter(host){
         maitre[k]=apres;
         const remis=apres&&retireAvant.has(k);
         if(!apres)retireAvant.add(k);
-        const effet=apres?(remis?'remis':'ajout'):'retrait',cv=apres&&proposition(k);
-        evts.push({x,k,type:cv?'adopte':effet,effet,version:'',source:cv||'',attente});
-        if(cv){delete ecarts[cv][k];evts.push({x,k,type:'adopte',version:cv,attente});}
+        // Une adoption garde la ligne de la proposition (prop) : son auteur en est notifié.
+        const effet=apres?(remis?'remis':'ajout'):'retrait',p=apres&&props[k];
+        evts.push({x,k,type:p?'adopte':effet,effet,prop:p?p.x:null,attente});
+        if(p)delete props[k];
         return;
       }
-      if(g==='non retenu'){const cv=proposition(k),P=cv&&ecarts[cv];if(!P||P[k].etat!=='attente')return;const ev={x,k,type:'classe',version:cv,attente};P[k]=Object.assign({},P[k],{etat:'classe',classe:x,evtClasse:ev});evts.push(ev);return;}
-      // Une proposition compte tant que la version maître ne contient pas le lien.
+      if(g==='non retenu'){const p=props[k];if(!p||p.etat!=='attente')return;const ev={x,k,type:'classe',prop:p.x,attente};props[k]=Object.assign({},p,{etat:'classe',classe:x,evtClasse:ev});evts.push(ev);return;}
+      // Une proposition compte tant que la concordance ne contient pas le lien.
       if(g!=='proposé'||maitre[k])return;
-      const v='p'+x.participant,avant=proposition(k);
       // Une proposition encore appuyée reste; la deuxième personne l'appuie de son 👍, et sa raison reste dans la discussion.
-      if(avant){if(appuye(k,x.ts,ecarts[avant][k].x.ts))return;eteindre(avant,k,x.ts);}
-      const E=ecarts[v]=ecarts[v]||{};
-      const ev={x,k,type:'ecart-ajout',version:v,attente};
-      E[k]={type:'ajoute',x,etat:'attente',evt:ev};
+      if(props[k]){if(appuye(k,x.ts,props[k].x.ts))return;eteindre(k,x.ts);}
+      const ev={x,k,type:'propose',attente};
+      props[k]={x,etat:'attente',evt:ev};
       evts.push(ev);
     });
     // Votes : le dernier de chaque personne sur chaque lien; un compte supprimé ne compte plus.
     const parPersonne={};
     votes.concat(voteAttente).forEach(x=>{
       if(!valide(x))return;
-      if(enLigne&&participants.length&&!participants.some(p=>p.id===x.participant))return;
+      if(participants.length&&!participants.some(p=>p.id===x.participant))return;
       parPersonne[K(x.ec,x.el)+'#'+x.participant]=x;
     });
     const vt={};
-    const debutProp={};Object.keys(ecarts).forEach(cv=>Object.keys(ecarts[cv]).forEach(k=>{debutProp[k]=ecarts[cv][k].x.ts;}));
+    const debutProp={};Object.keys(props).forEach(k=>{debutProp[k]=props[k].x.ts;});
     Object.values(parPersonne).forEach(x=>{if(x.sens!=='pour'&&x.sens!=='contre')return;const k=K(x.ec,x.el);if(!maitre[k]&&debutProp[k]&&x.ts<debutProp[k])return;(vt[k]=vt[k]||{pour:[],contre:[]})[x.sens].push(x);});
     const attente=new Set();
     Object.entries(vt).forEach(([k,o])=>{if(maitre[k]&&o.contre.some(x=>!decision[k]||x.ts>decision[k]))attente.add(k);});
-    Object.keys(ecarts).forEach(cv=>Object.keys(ecarts[cv]).forEach(k=>{if(!appuye(k,'~',ecarts[cv][k].x.ts))eteindre(cv,k,'~');}));
+    Object.keys(props).forEach(k=>{if(!appuye(k,'~',props[k].x.ts))eteindre(k,'~');});
     const msgs=messages.concat(msgAttente).filter(m=>m.comp===c&&m.texte);
     // La raison d'un vote contre reste dans la discussion tant que ce vote compte : la personne qui le retire ou le
     // change la retire aussi, et une nouvelle raison remplace la précédente. La feuille, elle, garde tout.
     const masques=new Set(),derniere={};
     msgs.forEach(m=>{if(m.type!=='contre'||!m.el)return;const kp=K(m.cible,m.el)+'#'+m.participant;if(derniere[kp])masques.add(derniere[kp]);derniere[kp]=m;});
     Object.entries(derniere).forEach(([kp,m])=>{const v=parPersonne[kp];if(v&&v.sens!=='contre')masques.add(m);});
-    msgs.forEach(m=>{if(m.type==='ecart'&&annulees.some(a=>a.v===m.version&&a.k===K(m.cible,m.el)&&m.ts>=a.de&&m.ts<a.a))masques.add(m);});
+    msgs.forEach(m=>{if(m.type==='ecart'&&annulees.some(a=>a.k===K(m.cible,m.el)&&m.ts>=a.de&&m.ts<a.a))masques.add(m);});
     // Mes messages modifiés ou supprimés : la dernière modification de l'auteur remplace le texte; une suppression le
     // retire. Les lignes « modif » et « supprime » elles-mêmes ne s'affichent pas.
     const texteDe=new Map(),modifies=new Set(),modifieLe=new Map();
@@ -1137,26 +1087,24 @@ function monter(host){
       const o=msgs.find(x=>x.type===''&&x.ts===m.ref&&x.participant===m.participant);if(!o)return;
       if(m.type==='supprime')masques.add(o);else{texteDe.set(o,m.texte);modifies.add(o);modifieLe.set(o,m.ts);}
     });
-    return cache[c]={maitre,probable,decision,ecarts,evts,votes:vt,attente,msgs,masques,texteDe,modifies,modifieLe,mesVotes:parPersonne};
+    return cache[c]={maitre,probable,decision,props,evts,votes:vt,attente,msgs,masques,texteDe,modifies,modifieLe,mesVotes:parPersonne};
   }
   const votesDe=(st,k)=>st.votes[k]||{pour:[],contre:[]};
   const monVote=(st,k)=>{const x=st.mesVotes[k+'#'+moi()];return x&&x.sens!=='retrait'?x.sens:'';};
-  const ecartsSur=(st,k,type)=>Object.keys(st.ecarts).filter(v=>st.ecarts[v][k]&&(!type||st.ecarts[v][k].type===type)).map(v=>({v,e:st.ecarts[v][k]}));
+
   const msgsLien=(st,k)=>{const [ec,el]=deK(k);return st.msgs.filter(m=>m.cible===ec&&m.el===el);};
-  // Commentaire d'une proposition : le dernier message « ecart » de son auteur sur ce lien.
-  const commentaire=(st,v,k)=>{const l=msgsLien(st,k).filter(m=>m.type==='ecart'&&m.version===v);return l.length?l[l.length-1].texte:'';};
+
   function decompte(st,k){
-    const vv=votesDe(st,k),n=new Set(vv.pour.concat(vv.contre).map(x=>(auteur(x).centre)||x.centre).filter(Boolean)).size;
-    return `${vv.pour.length} ${U('nPour')}, ${vv.contre.length} ${U('nContre')} · ${n} ${U(n>1?'nCentres':'nCentre')}`;
+    const vv=votesDe(st,k);
+    return `${vv.pour.length} ${U('nPour')}, ${vv.contre.length} ${U('nContre')}`;
   }
   const noms=l=>l.length?l.map(x=>quiTexte(x)).join(', '):U('personne');
-  // Nom de l'auteur d'une proposition (« p12 »).
-  const versionNom=v=>{if(!/^p\d+$/.test(v||''))return v||'';const id=v.slice(1),p=participants.find(x=>x.id===id)||journal.find(x=>x.participant===id);return p?p.nom:v;};
-  // Éditer la version maître : les administrateurs seulement.
-  const peutEditer=()=>estAdmin();
+  // Nom de l'auteur d'un geste (la ligne d'une proposition, par exemple), tel que la feuille le donne aujourd'hui.
+  const nomDe=x=>x?auteur(x).nom:'';
 
   // ---- Identification : un compte dans la feuille (nom, courriel, centre); un mot de passe pour les administrateurs ----
-  let apresIdentite=null,modeIdent='creer',besoinMdp=false;
+  // modeIdent : « connecter » (nom et courriel), « creer » (courriel inconnu : le centre est demandé) ou « profil ».
+  let apresIdentite=null,modeIdent='connecter',besoinMdp=false;
   // porte : la page de connexion. Avec la feuille Google, un compte est exigé avant d'afficher quoi que ce soit.
   let porte=false;
   function ouvrirPorte(){
@@ -1167,40 +1115,41 @@ function monter(host){
     const moiX={nom,centre,participant};
     R.querySelectorAll('.ident-btn').forEach(b=>{b.textContent=connecte()?'👤 '+auteur(moiX).nom:U('sIdentifier');b.title=connecte()?quiTexte(moiX):'';});
   }
+  // La liste des centres se termine par « Ajouter un centre… », qui ouvre un champ pour le nom du centre.
   function remplirCentres(){
-    const s=$('ident-centre'),choix=s.value||centre;
+    const s=$('ident-centre'),choix=s.value;
     const tri=centres.slice().sort((a,b)=>a.nom.localeCompare(b.nom,lang,{sensitivity:'base'}));
-    s.innerHTML=`<option value="">${esc(U('choisirCentre'))}</option>`+tri.map(c=>`<option value="${esc(c.id)}">${esc(c.nom)}</option>`).join('');
-    s.value=tri.some(c=>c.id===choix)?choix:'';
-    const visible=enLigne&&modeIdent==='creer'&&centres.length>0;
+    s.innerHTML=`<option value="">${esc(U('choisirCentre'))}</option>`+tri.map(c=>`<option value="${esc(c.id)}">${esc(c.nom)}</option>`).join('')+`<option value="+">${esc(U('ajouterCentre'))}</option>`;
+    s.value=choix==='+'||tri.some(c=>c.id===choix)?choix:'';
+    const visible=modeIdent==='creer',nouveau=visible&&s.value==='+';
     $('ident-centre-wrap').hidden=!visible;s.required=visible;
+    $('ident-nouveau-wrap').hidden=!nouveau;$('ident-nouveau').required=nouveau;
   }
-  // Trois modes : créer un compte, se connecter, ou « profil » quand on est déjà connecté (le compte, Se déconnecter, Fermer).
+  // Trois modes : se connecter (nom et courriel), créer un compte (courriel inconnu : le centre est demandé sur le même
+  // écran, avec l'avis sur l'usage du courriel), ou « profil » quand on est déjà connecté (le compte, Se déconnecter,
+  // Fermer).
   function modeIdentite(m){
     modeIdent=m;
-    const creer=m==='creer',profil=m==='profil';
-    $('ident-titre').textContent=U(!enLigne?'identTitre':profil?'monCompte':creer?'creerTitre':'connecterTitre');
-    $('ident-expl').textContent=!enLigne?U('identExplLocal'):profil?quiTexte({nom,centre,participant})+(role==='administrateur'?' · '+U('roleAdmin'):''):(participant?`${U('compteActif')} ${quiTexte({nom,centre,participant})}. `:'')+U(creer?'identExpl':'connecterExpl');
+    const creer=m==='creer',profil=m==='profil',moiX={nom,centre,participant};
+    $('ident-titre').textContent=U(profil?'monCompte':creer?'creerTitre':'connecterTitre');
+    $('ident-expl').textContent=profil?quiTexte(moiX)+(role==='administrateur'?' · '+U('roleAdmin'):''):creer?U('identExpl'):participant?`${U('compteActif')} ${quiTexte(moiX)}.`:'';
+    $('ident-expl').hidden=!$('ident-expl').textContent;
     $('ident-nom-wrap').hidden=profil;$('ident-nom').required=!profil;
-    $('ident-courriel-wrap').hidden=!enLigne||profil;$('ident-courriel').required=enLigne&&!profil;
-    $('ident-mdp-wrap').hidden=profil||!(enLigne&&(besoinMdp||role==='administrateur'));
-    // En ligne, hors « Mon compte » : deux onglets, Se connecter et Créer un compte, à la place du titre.
-    const onglets=enLigne&&!profil;
-    $('ident-onglets').hidden=!onglets;$('ident-titre').hidden=onglets;$('ident-mode').hidden=true;
-    R.querySelectorAll('[data-mode-ident]').forEach(b=>{const on=b.dataset.modeIdent===m;b.classList.toggle('active',on);b.setAttribute('aria-selected',on);b.textContent=U(b.dataset.modeIdent==='creer'?'modeCreer':'connecter');});
-    $('ident-deconnexion').hidden=!(enLigne&&participant);$('ident-deconnexion').textContent=U('deconnecter');
-    $('ident-ok').hidden=profil;$('ident-ok').textContent=U(!enLigne?'enregistrer':creer?'creer':'connecter');
+    $('ident-courriel-wrap').hidden=profil;$('ident-courriel').required=!profil;
+    $('ident-mdp-wrap').hidden=profil||!(besoinMdp||role==='administrateur');
+    $('ident-deconnexion').hidden=!participant;$('ident-deconnexion').textContent=U('deconnecter');
+    $('ident-ok').hidden=profil;$('ident-ok').textContent=U(creer?'creer':'connecter');
     $('ident-annuler').textContent=U(profil?'fermer':'annuler');$('ident-annuler').hidden=porte;$('ident-langue').hidden=!porte;
     $('ident-erreur').hidden=true;
     remplirCentres();
-    if(profil)$('ident-centre-wrap').hidden=true;
   }
   // forcer : se connecter de nouveau même si un compte est en mémoire (compte introuvable, mot de passe refusé).
   function ouvrirIdentite(suite,forcer){
     apresIdentite=suite||null;besoinMdp=false;
     $('ident-nom').value=nom;$('ident-courriel').value=courriel;$('ident-mdp').value='';$('ident-centre').value='';
-    const profil=enLigne&&participant&&!forcer&&!suite&&!(role==='administrateur'&&!mdp);
-    modeIdentite(profil?'profil':enLigne&&(participant||courriel)?'connecter':'creer');
+    const profil=participant&&!forcer&&!suite&&!(role==='administrateur'&&!mdp);
+    $('ident-nouveau').value='';
+    modeIdentite(profil?'profil':'connecter');
     $('ident-ok').disabled=false;
     $('ident').hidden=false;(profil?$('ident-annuler'):$('ident-nom')).focus();
   }
@@ -1210,14 +1159,16 @@ function monter(host){
     $('ident').hidden=true;apresIdentite=null;applyUI();render();
     if(suite)suite();
   }
-  // Courriel déjà inscrit avec le même nom : la feuille reconnecte la personne, même depuis « Créer un compte ».
+  // Une seule requête : courriel connu, la personne est connectée; courriel inconnu, la feuille répond « nouveau » et
+  // l'écran demande le centre; avec le centre (ou le nom d'un nouveau centre), le compte est créé.
   $('ident-form').addEventListener('submit',ev=>{
     ev.preventDefault();
     const n=$('ident-nom').value.trim();if(!n)return;
-    if(!enLigne){nom=n;garder('nom',n);identiteFaite();return;}
-    const cou=$('ident-courriel').value.trim().toLowerCase(),ce=$('ident-centre').value,mp=$('ident-mdp').value;
+    const cou=$('ident-courriel').value.trim().toLowerCase(),sel=$('ident-centre').value,mp=$('ident-mdp').value;
+    const creer=modeIdent==='creer',nouveau=creer&&sel==='+'?$('ident-nouveau').value.trim():'';
+    if(creer&&(!sel||sel==='+'&&!nouveau)){(sel?$('ident-nouveau'):$('ident-centre')).focus();return;}
     $('ident-ok').disabled=true;$('ident-erreur').hidden=true;
-    enFile(()=>backend.compte({nom:n,courriel:cou,centre:ce,connecter:modeIdent==='connecter',motDePasse:mp}).then(d=>{
+    enFile(()=>backend.compte({nom:n,courriel:cou,centre:creer&&sel!=='+'?sel:'',nouveauCentre:nouveau,motDePasse:mp}).then(d=>{
       appliquer(d);
       if(d.compte.id!==participant)undoStack=[];
       ({nom,centre,id:participant}=d.compte);role=d.compte.role||'';courriel=cou;mdp=role==='administrateur'?mp:'';
@@ -1225,20 +1176,22 @@ function monter(host){
       if(role){garder('role',role);garder('mdp',mdp);}else{oublier('role');oublier('mdp');}
       sync='';identiteFaite();
     },e=>{
+      if(e.message==='nouveau'){modeIdentite('creer');$('ident-centre').focus();return;}
       if(e.message==='motdepasse-requis'||e.message==='motdepasse'){besoinMdp=true;$('ident-mdp-wrap').hidden=false;$('ident-mdp').focus();}
       if(e.message==='code'){afficherVerrou('verrouRefuse');$('ident').hidden=true;return;}
-      const cle={nom:'eNom',inconnu:'eInconnu',courriel:'eCourriel',centre:'eCentre','motdepasse-requis':'eMdpRequis',motdepasse:'eMdp',bloque:'eBloque'}[e.message]||'eReseau';
+      const cle={nom:'eNom',courriel:'eCourriel',centre:'eCentre','motdepasse-requis':'eMdpRequis',motdepasse:'eMdp',bloque:'eBloque'}[e.message]||'eReseau';
       $('ident-erreur').innerHTML=esc(U(cle))+(cle==='eMdpRequis'?'':`<span class="soutien">${esc(U('soutien'))} <a href="mailto:${COURRIEL_SOUTIEN}">${COURRIEL_SOUTIEN}</a></span>`);
       $('ident-erreur').hidden=false;
     }).then(()=>{$('ident-ok').disabled=false;}));
   });
-  $('ident-mode').addEventListener('click',()=>modeIdentite(modeIdent==='creer'?'connecter':'creer'));
-  R.querySelectorAll('[data-mode-ident]').forEach(b=>b.addEventListener('click',()=>{if(modeIdent===b.dataset.modeIdent)return;modeIdentite(b.dataset.modeIdent);$('ident-nom').focus();}));
+  // Corriger son courriel ramène l'écran à sa première étape; « Ajouter un centre… » ouvre le champ du nom du centre.
+  $('ident-courriel').addEventListener('input',()=>{if(modeIdent==='creer')modeIdentite('connecter');});
+  $('ident-centre').addEventListener('change',()=>{remplirCentres();if($('ident-centre').value==='+')$('ident-nouveau').focus();});
   // Se déconnecter : le compte est oublié par ce navigateur (le code d'accès, lui, reste).
   $('ident-deconnexion').addEventListener('click',()=>{
     nom='';centre='';participant='';courriel='';role='';mdp='';
     ['nom','centre','participant','courriel','role','mdp','notifs_lu'].forEach(oublier);
-    undoStack=[];brouillons={};voteContre=null;voteContreTexte='';commentairesEnCours={};selectedEc=null;notifsOuvert=false;page='';msgEdition=null;msgSuppr=null;ajoutOuvert=null;ajoutTexte='';ajoutEl='';
+    undoStack=[];voteContre=null;voteContreTexte='';centreEdition=null;centreFusion=null;centreErreur=null;selectedEc=null;notifsOuvert=false;page='';msgEdition=null;msgSuppr=null;ajoutOuvert=null;ajoutTexte='';ajoutEl='';
     $('ident').hidden=true;apresIdentite=null;cache=null;applyUI();render();   // render ouvre la page de connexion
   });
   $('ident-annuler').addEventListener('click',()=>{if(porte)return;$('ident').hidden=true;apresIdentite=null;});
@@ -1246,12 +1199,12 @@ function monter(host){
   $('banniere-btn').addEventListener('click',()=>{if(sync==='erreur-reseau')charger();else ouvrirIdentite(null,true);});
   function majSync(){
     const s=$('sync');
-    s.textContent=!enLigne?U('sLocal'):sync==='envoi'?U('sEnvoi'):sync==='chargement'?U('sChargement'):sync.startsWith('erreur')?U('sErreur'):U('sOk');
-    s.title=U(enLigne?'sTitreFeuille':'sTitreLocal');s.hidden=enLigne&&!sync;
+    s.textContent=sync==='envoi'?U('sEnvoi'):sync==='chargement'?U('sChargement'):sync.startsWith('erreur')?U('sErreur'):U('sOk');
+    s.title=U('sTitreFeuille');s.hidden=!sync;
     s.classList.toggle('erreur',sync.startsWith('erreur'));
-    const msg={'erreur-compte':'bCompte','erreur-admin':'bAdmin','erreur-centre':'bCentre','erreur-recent':'bRecent','erreur-reseau':'bReseau'}[sync]||'';
+    const msg={'erreur-compte':'bCompte','erreur-admin':'bAdmin','erreur-recent':'bRecent','erreur-reseau':'bReseau'}[sync]||'';
     $('banniere').hidden=!msg;
-    if(msg){$('banniere-txt').textContent=U(msg);$('banniere-btn').textContent=U(sync==='erreur-reseau'?'reessayer':'sIdentifier');$('banniere-btn').hidden=sync==='erreur-centre'||sync==='erreur-recent';}
+    if(msg){$('banniere-txt').textContent=U(msg);$('banniere-btn').textContent=U(sync==='erreur-reseau'?'reessayer':'sIdentifier');$('banniere-btn').hidden=sync==='erreur-recent';}
   }
 
   // ---- Infobulle : texte d'un élément ou d'un critère, avec les remarques sur le lien ----
@@ -1285,30 +1238,35 @@ function monter(host){
     }).join('');
   }
 
-  // ---- En-tête : version, liste « À traiter », cloche ----
+  // ---- En-tête : titre, liste « À traiter », cloche ----
   function updateHeader(){
-    $('header-doc').textContent=page==='traiter'?U('traiterTitre'):T(comp().subtitle);
-    $('header-sous').hidden=page==='traiter'||comp().type!=='situation';$('header-sous').textContent=U('situ');
-    R.querySelectorAll('.nav-btn[data-comp]').forEach(b=>b.classList.toggle('active',page!=='traiter'&&b.dataset.comp===curComp));
+    $('header-doc').textContent=page==='traiter'?U('traiterTitre'):page==='membres'?U('membres'):T(comp().subtitle);
+    $('header-sous').hidden=!!page||comp().type!=='situation';$('header-sous').textContent=U('situ');
+    R.querySelectorAll('.nav-btn[data-comp]').forEach(b=>b.classList.toggle('active',!page&&b.dataset.comp===curComp));
+    $('nav-membres').classList.toggle('active',page==='membres');
     // Administrateurs : le nom d'une compétence qui garde des liens « probable » est en italique.
     R.querySelectorAll('.nav-btn[data-comp]').forEach(b=>{const st=estAdmin()&&etatComp(b.dataset.comp);b.classList.toggle('probable',!!st&&[...st.probable].some(k=>st.maitre[k]));});
-    $('vue-prog').classList.toggle('on',vues.prog);$('vue-prog').setAttribute('aria-pressed',vues.prog);
-    $('vue-ref').classList.toggle('on',vues.ref);$('vue-ref').setAttribute('aria-pressed',vues.ref);
+
     $('crossref-cb').checked=crossRef;
     $('left-nav').classList.toggle('collapsed',!navOpen);
-    const nT=estAdmin()&&enLigne?aTraiter().length:0;
-    $('btn-traiter').hidden=!(estAdmin()&&enLigne);
+    const nT=estAdmin()?aTraiter().length:0;
+    $('btn-traiter').hidden=!estAdmin();
     $('btn-traiter').innerHTML=`${esc(U('traiter'))}${nT?`<span class="compteur">${nT}</span>`:''}`;
     $('btn-traiter').classList.toggle('on',page==='traiter');
-    const nN=connecte()&&enLigne?notifications().filter(n=>n.nouv).length:0;
-    $('cloche').hidden=!(connecte()&&enLigne);
+    const nN=connecte()?notifications().filter(n=>n.nouv).length:0;
+    $('cloche').hidden=!connecte();
     $('btn-cloche').innerHTML=`🔔${nN?`<span class="compteur">${nN}</span>`:''}`;
     $('btn-cloche').title=U('notifications');
     updateUndoBtn();
   }
 
-  // ---- Référentiel : pastilles de la version maître et ajouts proposés, chacun avec ses votes ----
-  function traceTxt(st,k,v,e){const m=msgsLien(st,k).filter(x=>x.type==='ecart'&&x.version===v),r=m.length?m[m.length-1].texte:'';return U('traceAjout',{n:quiTexte(e.x),d:dateCourte(e.x.ts),s:e.etat==='classe'?' ('+U('classeCourt')+')':'',r:decoderMentions(r)});}
+  // ---- Référentiel : pastilles de la concordance et ajouts proposés, chacun avec ses votes ----
+  // Titre d'un document. Documents empilés (téléphone) : un accordéon qui replie le document sur son titre.
+  function titreDoc(d){
+    const t=`${d==='prog'?'🔨':'📋'} ${esc(U(d))}`;
+    return empile()?`<button type="button" class="sp-titre" data-plier="${d}" aria-expanded="${!!vues[d]}">${t}<span class="chev" aria-hidden="true">▼</span></button>`:`<span class="sp-titre">${t}</span>`;
+  }
+  function traceTxt(st,k,p){const m=msgsLien(st,k).filter(x=>x.type==='ecart'&&x.participant===p.x.participant),r=m.length?m[m.length-1].texte:'';return U('traceAjout',{n:quiTexte(p.x),d:dateCourte(p.x.ts),s:p.etat==='classe'?' ('+U('classeCourt')+')':'',r:decoderMentions(r)});}
   // Les pouces d'un lien. Le chiffre du 👎 est rouge tant qu'une décision des administrateurs est attendue.
   function pouces(st,k){
     const vv=votesDe(st,k),vote=monVote(st,k),att=st.attente.has(k);
@@ -1321,9 +1279,9 @@ function monter(host){
     return `<span class="lien-v"><button type="button" class="el-chip lien${pro?' probable':''}" data-elid="${el}" data-k="${k}"><span class="barre-code">${shortBadge(el)}</span></button>${pouces(st,k)}</span>`;
   }
   // Un ajout proposé : pastille pâle, avec ses pouces; « non retenue » s'il y a lieu.
-  function chipPropose(st,k,cv,p){
+  function chipPropose(st,k,p){
     const [,el]=deK(k),nr=p.etat==='classe';
-    return `<span class="lien-v"><button type="button" class="el-chip fantome${nr?' classe':''}" data-elid="${el}" data-k="${k}" data-trace="${esc(traceTxt(st,k,cv,p))}"><span class="barre-code">${shortBadge(el)}</span>${nr?`<span class="etiq">${U('classeCourt')}</span>`:''}</button>${pouces(st,k)}</span>`;
+    return `<span class="lien-v"><button type="button" class="el-chip fantome${nr?' classe':''}" data-elid="${el}" data-k="${k}" data-trace="${esc(traceTxt(st,k,p))}"><span class="barre-code">${shortBadge(el)}</span>${nr?`<span class="etiq">${U('classeCourt')}</span>`:''}</button>${pouces(st,k)}</span>`;
   }
   // partie : 'row' (les pastilles), 'bulle' (la raison d'un vote contre ou la boîte d'un ajout en cours), ou les deux.
   function chipsRef(st,ecId,partie){
@@ -1331,18 +1289,20 @@ function monter(host){
     C.els.forEach(e=>{
       const k=K(ecId,e.id);
       if(st.maitre[k]){liste.push(chipMaitre(st,k));return;}
-      const pr=ecartsSur(st,k,'ajoute')[0];if(pr)liste.push(chipPropose(st,k,pr.v,pr.e));
+      const p=st.props[k];if(p)liste.push(chipPropose(st,k,p));
     });
     // Le + : proposer un ajout, pour un participant connecté (les administrateurs éditent au crayon).
-    const libres=C.els.filter(e=>!st.maitre[K(ecId,e.id)]&&!ecartsSur(st,K(ecId,e.id),'ajoute').length);
-    if(maVersion()&&libres.length)liste.push(`<button type="button" class="plus-ajout${ajoutOuvert===ecId?' on':''}" data-plus="${ecId}" title="${esc(U('plusTip'))}" aria-label="${esc(U('plusTip'))}" aria-expanded="${ajoutOuvert===ecId}">+</button>`);
+    const libres=C.els.filter(e=>!st.maitre[K(ecId,e.id)]&&!st.props[K(ecId,e.id)]);
+    if(proposeur()&&libres.length)liste.push(`<button type="button" class="plus-ajout${ajoutOuvert===ecId?' on':''}" data-plus="${ecId}" title="${esc(U('plusTip'))}" aria-label="${esc(U('plusTip'))}" aria-expanded="${ajoutOuvert===ecId}">+</button>`);
     let h=partie!=='bulle'&&liste.length?`<div class="el-chips-row">${liste.join('')}</div>`:'';
     if(partie!=='row'&&voteContre&&deK(voteContre)[0]===ecId)h+=`<form class="bulle" data-bulle="${voteContre}"><input id="raison-contre" data-champ="contre" value="${esc(voteContreTexte)}" maxlength="300" aria-label="${esc(U('raisonContre'))}" placeholder="${esc(U('raisonContre'))}"><button type="submit" class="btn-p danger">${U('envoyer')}</button><button type="button" class="btn-s" data-annuler-vote>${U('annuler')}</button></form>`;
     return h;
   }
   function renderReferentiel(el){
-    const st=etatComp(curComp),edit=estAdmin()||(role==='administrateur'&&enLigne);
-    let h=`<div class="sp-header"><span>📋 ${U('ref')}</span></div>`;
+    const st=etatComp(curComp),edit=role==='administrateur',plie=empile()&&!vues.ref;
+    el.classList.toggle('plie',plie);
+    let h=`<div class="sp-header">${titreDoc('ref')}</div>`;
+    if(plie){el.innerHTML=h;return;}
     if(T(comp().seuil))h+=`<p class="seuil">${U('seuil')} ${T(comp().seuil)}</p>`;
     comp().indicateurs.forEach((ind,si)=>{
       const pts=ind.ecs.reduce((a,id)=>{const e=ecById(id);return a+(e?e.pts:0);},0);
@@ -1383,7 +1343,7 @@ function monter(host){
     el.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',ev=>{
       ev.stopPropagation();
       const id=b.dataset.edit;
-      if(selectedEc===id){selectedEc=null;brouillons={};render();montrer(`#sheet-ref [data-eckey="${id}"]`,'center');return;}
+      if(selectedEc===id){selectedEc=null;render();montrer(`#sheet-ref [data-eckey="${id}"]`,'center');return;}
       // Documents empilés : le programme, qui passe en mode édition, est amené à l'écran.
       const ouvrir=()=>{if(!estAdmin())return;selectionner(id);render();montrer('#sheet-prog .sp-header');};
       if(!estAdmin()){ouvrirIdentite(ouvrir,true);return;}
@@ -1430,12 +1390,12 @@ function monter(host){
 
   // ---- Programme : lecture, ou mode édition quand un critère est sélectionné ----
   function liensProgramme(st,elId){
-    // Pour un élément : les critères liés dans la version maître, puis les ajouts proposés (pâles).
+    // Pour un élément : les critères liés dans la concordance, puis les ajouts proposés (pâles).
     const r=[];
     comp().ec.forEach(ec=>{
       const k=K(ec.id,elId);
       if(st.maitre[k])r.push({ec:ec.id,cls:'lien'+(estAdmin()&&st.probable.has(k)?' probable':'')});
-      else{const pr=ecartsSur(st,k,'ajoute')[0];if(pr)r.push({ec:ec.id,cls:'fantome'+(pr.e.etat==='classe'?' classe':'')});}
+      else{const p=st.props[k];if(p)r.push({ec:ec.id,cls:'fantome'+(p.etat==='classe'?' classe':'')});}
     });
     return r;
   }
@@ -1444,10 +1404,10 @@ function monter(host){
     const links=opt.chips?liensProgramme(st,e.id):[];
     const hasChips=links.length>0;
     const chips=()=>`<div class="ec-chips-row">${links.map(l=>`<button type="button" class="ec-chip ${l.cls}" data-ecid="${l.ec}"><span class="barre-code">${ecCourt(l.ec)}</span></button>`).join('')}</div>`;
-    let cls='el-card'+(open?' expanded':'')+(opt.dimmed?' dimmed':'')+(opt.editable?' editable':'')+(opt.coche?' linked-fort':'')+(opt.ecart?' ecart-'+opt.ecart:'')+(opt.brouillon?' brouillon':'')+(opt.pris?' pris':'');
-    let h=`<div class="${cls}" data-elkey="${e.id}"${opt.editable?` data-elrow="${opt.ecId}" data-elid="${e.id}"`:''}>`;
+    let cls='el-card'+(open?' expanded':'')+(opt.lie?' lie':'')+(opt.editable?' editable':'')+(opt.disponible?' disponible':'')+(opt.choisi?' choisi':'');
+    let h=`<div class="${cls}" data-elkey="${e.id}"${opt.ecId?` data-elrow="${opt.ecId}" data-elid="${e.id}"`:''}>`;
     h+=`<div class="el-card-top" data-eltgl="${e.id}" role="button" tabindex="0" aria-expanded="${open}">`;
-    if(opt.editable)h+=`<div class="el-row-check" role="checkbox" tabindex="0" aria-checked="${!!opt.coche}"${opt.pris?' aria-disabled="true"':''}>${opt.coche?'✓':''}</div>`;
+    if(opt.editable)h+=`<div class="el-row-check" role="checkbox" tabindex="0" aria-checked="${!!opt.coche}">${opt.coche?'✓':''}</div>`;
     const lab=T(e.label),m=lab.match(/^(.+?)\s+—\s+(.+)$/);
     h+=`<div class="el-card-main"><div class="el-label"><span class="el-code">${m?m[1]:''}</span><span class="el-text">${m?m[2]:lab}</span>${opt.bulle||''}</div>${opt.note||''}</div>`;
     h+=`<span class="ec-chevron el-chevron">▼</span></div>`;
@@ -1470,42 +1430,46 @@ function monter(host){
     return `<button type="button" class="puce-probable" data-confirmer="${k}" title="${esc(U('retirerProbable'))}" aria-label="${esc(U('retirerProbable'))}">${U('probableCourt')}<span aria-hidden="true">×</span></button>`;
   }
   function renderProgramme(el){
-    const st=etatComp(curComp),editing=selectedEc&&ecById(selectedEc)&&peutEditer();
-    const ajout=!editing&&ajoutOuvert&&ecById(ajoutOuvert)&&maVersion()?ajoutOuvert:null;
-    let h=`<div class="sp-header"><span>🔨 ${U('prog')}</span>`;
+    const st=etatComp(curComp),editing=selectedEc&&ecById(selectedEc)&&estAdmin();
+    const ajout=!editing&&ajoutOuvert&&ecById(ajoutOuvert)&&proposeur()?ajoutOuvert:null;
+    const plie=empile()&&!vues.prog;
+    el.classList.toggle('plie',plie);
+    let h=`<div class="sp-header">${titreDoc('prog')}`;
     if(ajout)h+=`<span class="sp-actions"><span class="sp-editing-badge">+ ${ecCourt(ajout)}<button class="sp-close" id="sp-fermer-ajout" title="${esc(U('editClose'))}" aria-label="${esc(U('editClose'))}">✕</button></span></span>`;
     if(editing)h+=`<span class="sp-actions"><span class="sp-editing-badge">✎ ${ecCourt(selectedEc)}<button class="sp-close" id="sp-deselect" title="${esc(U('editClose'))}" aria-label="${esc(U('editClose'))}">✕</button></span></span>`;
     h+=`</div>`;
+    if(plie){el.innerHTML=h;return;}
     if(comp().heures)h+=`<p class="seuil">${U('duree')} ${U('heures',{n:comp().heures})}</p>`;
     if(comp().note)h+=`<p class="comp-note">${T(comp().note)}</p>`;
+    // Lecture et crayon : les éléments liés à au moins un critère sont en relief, quand les liens sont affichés.
+    const lies=new Set();comp().ec.forEach(ec=>comp().els.forEach(e=>{if(st.maitre[K(ec.id,e.id)])lies.add(e.id);}));
+    const relief=id=>crossRef&&lies.has(id);
     if(editing){
+      // Crayon : la vue de lecture, plus une case par élément (cochée : lié au critère sélectionné).
       comp().els.forEach(e=>{
         const k=K(selectedEc,e.id);
-        h+=elCardHtml(st,e,{editable:true,ecId:selectedEc,coche:!!st.maitre[k],chips:crossRef,note:noteEdition(st,k),bulle:puceProbable(st,k)});
+        h+=elCardHtml(st,e,{editable:true,ecId:selectedEc,coche:!!st.maitre[k],lie:relief(e.id),chips:crossRef,note:noteEdition(st,k),bulle:puceProbable(st,k)});
       });
     }else if(ajout){
-      // Proposer un ajout : un clic sur un élément libre le choisit, et sa fiche demande la raison. Les éléments déjà
-      // liés ou déjà proposés ne se choisissent pas.
+      // Proposer un ajout : le relief passe aux éléments disponibles, qui attendent un clic; celui qu'on choisit demande
+      // la raison. Les éléments déjà liés à ce critère ou déjà proposés ne se choisissent pas.
       comp().els.forEach(e=>{
-        const k=K(ajout,e.id),pris=!!st.maitre[k]||ecartsSur(st,k,'ajoute').length>0,choisi=ajoutEl===e.id;
+        const k=K(ajout,e.id),pris=!!st.maitre[k]||!!st.props[k],choisi=ajoutEl===e.id;
         const note=choisi?`<form class="note-ecart" data-ajout-form="${e.id}"><input maxlength="300" data-champ="ajout" value="${esc(ajoutTexte)}" placeholder="${esc(U('raisonAjout'))}" aria-label="${esc(U('raisonAjout'))}"><div class="ligne"><button type="submit" class="btn-p">${U('proposer')}</button><button type="button" class="btn-s" data-annuler-ajout>${U('annuler')}</button></div></form>`:'';
-        h+=elCardHtml(st,e,{editable:true,ecId:ajout,coche:pris||choisi,pris,ecart:choisi?'ajoute':'',chips:crossRef,note});
+        h+=elCardHtml(st,e,{ecId:ajout,disponible:!pris&&!choisi,choisi,chips:crossRef,note});
       });
     }else{
-      // À côté du référentiel, les éléments non évalués s'estompent, seulement quand les liens sont affichés.
-      const lies=new Set();comp().ec.forEach(ec=>comp().els.forEach(e=>{if(presentDans(st,version,K(ec.id,e.id)))lies.add(e.id);}));
-      const estomper=crossRef&&vues.ref&&lies.size>0;
-      comp().els.forEach(e=>{h+=elCardHtml(st,e,{chips:crossRef,dimmed:estomper&&!lies.has(e.id)});});
+      comp().els.forEach(e=>{h+=elCardHtml(st,e,{chips:crossRef,lie:relief(e.id)});});
     }
     el.innerHTML=h;
     bindElCards(el);
     if(ajout){
       $('sp-fermer-ajout').addEventListener('click',()=>{ajoutOuvert=null;ajoutEl='';ajoutTexte='';render();montrer(`#sheet-ref [data-eckey="${ajout}"]`,'center');});
-      el.querySelectorAll('[data-elrow] .el-row-check').forEach(chk=>{
-        const row=chk.closest('[data-elrow]');
-        chk.addEventListener('click',ev=>{
-          ev.stopPropagation();if(row.classList.contains('pris'))return;
-          const id=row.dataset.elid;ajoutEl=ajoutEl===id?'':id;ajoutTexte='';render();
+      // Un clic sur un élément disponible le choisit; son chevron, lui, déplie ses précisions.
+      el.querySelectorAll('.el-card.disponible>.el-card-top').forEach(top=>{
+        top.addEventListener('click',ev=>{
+          if(ev.target.closest('.el-chevron'))return;
+          ev.stopPropagation();ajoutEl=top.parentNode.dataset.elid;ajoutTexte='';render();
           const i=el.querySelector('[data-ajout-form] input');if(i)i.focus();
         });
       });
@@ -1530,7 +1494,7 @@ function monter(host){
         ev.stopPropagation();
         const ec=row.dataset.elrow,elId=row.dataset.elid,k=K(ec,elId);
         // Cocher un lien qui a une proposition l'adopte.
-        modifierLiens([{ec,el:elId,geste:st.maitre[k]?'retiré':ecartsSur(st,k,'ajoute').length?'adopté':'ajouté'}]);
+        gesteAdmin([{ec,el:elId,geste:st.maitre[k]?'retiré':st.props[k]?'adopté':'ajouté'}]);
       });
     });
     el.querySelectorAll('[data-maintenir]').forEach(b=>b.addEventListener('click',ev=>{ev.stopPropagation();maintenir(curComp,b.dataset.maintenir);}));
@@ -1561,6 +1525,7 @@ function monter(host){
   function bindElCards(root){
     root.querySelectorAll('[data-eltgl]').forEach(c=>c.addEventListener('click',ev=>{
       if(ev.target.closest('.el-row-check')||ev.target.closest('.note-ecart'))return;
+      if(c.parentNode.classList.contains('disponible')&&!ev.target.closest('.el-chevron'))return;
       ev.stopPropagation();
       const id=c.dataset.eltgl;
       if(expandedEls.has(id))expandedEls.delete(id);else expandedEls.add(id);
@@ -1574,7 +1539,7 @@ function monter(host){
     });
   }
 
-  // ---- Discussion et écarts de la compétence; encadré d'un lien ----
+  // ---- Discussion de la compétence; encadré d'un lien ----
   function ouvrirFil(onglet){filOnglet=onglet;filJusteOuvert=true;render();if(onglet==='discussion')$('composer-txt').focus();}
   // L'encadré d'un lien montre, pour ce lien seulement, ce que montre la discussion. Il sert à lire.
   // À la fermeture, le focus revient au bouton qui a ouvert l'encadré (reconstruit entre-temps : on le retrouve par ses attributs).
@@ -1593,13 +1558,12 @@ function monter(host){
   const decoderMentions=t=>String(t).replace(/@\[(\d+)\]/g,(_,id)=>{const p=participants.find(x=>x.id===id);return '@'+(p?p.nom:id);});
   const avecMentions=t=>esc(t).replace(/@\[(\d+)\]/g,(_,id)=>{const p=participants.find(x=>x.id===id);return `<span class="arobase">@${esc(p?p.nom:id)}</span>`;});
   function texteEvt(e){
-    const n=quiTexte(e.x),c=versionNom(e.version||e.source);
-    return U({ajout:'eAjout',retrait:'eRetrait',remis:'eRemis',maintenu:'eMaintenu',adopte:'eAdopte',classe:'eClasse','ecart-ajout':'eEcartAjout'}[e.type],{n,c});
+    const n=quiTexte(e.x),c=nomDe(e.prop);
+    return U({ajout:'eAjout',retrait:'eRetrait',remis:'eRemis',maintenu:'eMaintenu',adopte:'eAdopte',classe:'eClasse',propose:'eEcartAjout'}[e.type],{n,c});
   }
   // Un message de la discussion. Les miens (actions) portent ✎ et 🗑 au bout de la ligne; « modifié » s'il l'a été.
   function msgHtml(m,tag,st,actions){
-    // Les messages de l'ancien outil visaient un critère sans élément : on garde l'étiquette du critère.
-    const crit=m.cible&&!m.el?`<button type="button" class="tag" data-cible-ec="${esc(m.cible)}">${esc(ecCourt(m.cible))}</button>`:'';
+
     const texte=st&&st.texteDe.get(m)||m.texte,att=msgAttente.includes(m);
     const mien=actions&&!att&&m.type===''&&connecte()&&m.participant===moi(),edition=mien&&msgEdition&&msgEdition.ts===m.ts,suppr=mien&&msgSuppr===m.ts;
     const act=!mien||edition?'':suppr
@@ -1608,15 +1572,14 @@ function monter(host){
     const corps=edition
       ?`<form class="msg-edition" data-msg-edition="${esc(m.ts)}"><textarea data-champ="msgedit" maxlength="2000" aria-label="${esc(U('modifierMsg'))}">${esc(msgEdition.texte)}</textarea><div class="ligne"><button type="submit" class="btn-p">${U('enregistrer')}</button><button type="button" class="btn-s" data-msg-annuler>${U('annuler')}</button></div></form>`
       :`<div class="msg-texte">${avecMentions(texte)}</div>`;
-    return `<div class="msg${att?' attente':''}"><div class="msg-tete">${qui(m)}${tag||crit}<span>${dateHeure(m.ts)}</span>${st&&st.modifies.has(m)?`<span class="msg-modifie">${U('modifie')}</span>`:''}${act}</div>${corps}</div>`;
+    return `<div class="msg${att?' attente':''}"><div class="msg-tete">${qui(m)}${tag||''}<span>${dateHeure(m.ts)}</span>${st&&st.modifies.has(m)?`<span class="msg-modifie">${U('modifie')}</span>`:''}${act}</div>${corps}</div>`;
   }
   // La discussion d'une compétence : les messages et les gestes, triés par date. Un geste est une ligne discrète; le
-  // commentaire d'une proposition ou la raison d'un vote contre le suit en bulle. L'adoption vue du côté de la
-  // proposition répète le geste de la version maître : elle n'apparaît qu'une fois.
-  const IC_EVT={ajout:'+',retrait:'−',remis:'↺',maintenu:'⚖',adopte:'⇄',classe:'⇄','ecart-ajout':'+'};
+  // raison d'un ajout proposé ou d'un vote contre le suit en bulle.
+  const IC_EVT={ajout:'+',retrait:'−',remis:'↺',maintenu:'⚖',adopte:'⇄',classe:'⇄',propose:'+'};
   function filElements(st,k){
     const l=[];
-    st.evts.forEach(e=>{if(e.masque||(e.version&&e.type==='adopte'))return;if(!k||e.k===k)l.push({ts:e.x.ts,r:0,e});});
+    st.evts.forEach(e=>{if(e.masque)return;if(!k||e.k===k)l.push({ts:e.x.ts,r:0,e});});
     st.msgs.forEach(m=>{const mk=m.el?K(m.cible,m.el):'';if(!k||mk===k)l.push({ts:m.ts,r:1,m,mk});});
     return l.sort((a,b)=>a.ts<b.ts?-1:a.ts>b.ts?1:a.r-b.r);
   }
@@ -1625,35 +1588,33 @@ function monter(host){
     const tag=x=>k?'':`<button type="button" class="tag" data-cible="${esc(x)}">${esc(lienTxt(x))}</button> `;
     const ligne=(ic,adm,x,txt,ts,att)=>`<div class="geste${adm?' admin':''}${att?' attente':''}"><span class="ic-g">${ic}</span><span>${tag(x)}${esc(txt)} <span class="q">· ${dateHeure(ts)}</span></span></div>`;
     const bulle=(m,cls)=>`<div class="msg rattache${cls}${msgAttente.includes(m)?' attente':''}"><div class="msg-texte">${avecMentions(m.texte)}</div></div>`;
-    // La raison d'un écart part avec son geste, dans le même envoi : même date, même lien, même version.
-    // dernier : le type du dernier geste d'écart de chaque version sur chaque lien, déjà passé dans le fil.
-    const lies=new Set(),dernier={};
+    // La raison d'un ajout proposé part avec son geste, dans le même envoi : même date, même lien, même auteur.
+    const lies=new Set();
     const raisonDe=e=>{
-      if(e.type!=='ecart-ajout')return null;
+      if(e.type!=='propose')return null;
       const [ec,el]=deK(e.k);
-      return st.msgs.find(m=>m.type==='ecart'&&!lies.has(m)&&m.ts===e.x.ts&&m.version===e.version&&m.cible===ec&&m.el===el)||null;
+      return st.msgs.find(m=>m.type==='ecart'&&!lies.has(m)&&m.ts===e.x.ts&&m.participant===e.x.participant&&m.cible===ec&&m.el===el)||null;
     };
     return filElements(st,k).map(i=>{
       if(i.e){
         const e=i.e,m=raisonDe(e);if(m)lies.add(m);
-        if(e.type==='ecart-ajout')dernier[e.version+'#'+e.k]=e.type;
-        return ligne(IC_EVT[e.type]||'·',e.version===''||e.type==='classe',e.k,texteEvt(e),e.x.ts,e.attente)+(m?bulle(m,e.type==='ecart-ajout'?' ajout':''):'');
+        return ligne(IC_EVT[e.type]||'·',e.type!=='propose',e.k,texteEvt(e),e.x.ts,e.attente)+(m?bulle(m,e.type==='propose'?' ajout':''):'');
       }
       const m=i.m,att=msgAttente.includes(m);
       if(lies.has(m)||st.masques.has(m))return '';
       if(m.type==='contre'&&i.mk)return ligne('👎',false,i.mk,U('eContre',{n:quiTexte(m)}),m.ts,att)+bulle(m,'');
-      // Un commentaire modifié après coup : sa propre ligne, puis le texte, de la couleur du geste commenté. Sans geste
-      // d'écart avant lui (le lien rejoignait déjà la version maître à l'envoi), c'est un simple commentaire du centre.
-      if(m.type==='ecart'&&i.mk){const g=dernier[m.version+'#'+i.mk];return ligne('✎',false,i.mk,U(g?'eCommentaire':'eCommentaireLien',{n:quiTexte(m),c:versionNom(m.version)}),m.ts,att)+bulle(m,g==='ecart-ajout'?' ajout':'');}
+      // La raison d'une deuxième personne qui propose un ajout encore appuyé : son geste ne crée pas de proposition, mais
+      // sa raison reste dans la discussion.
+      if(m.type==='ecart'&&i.mk)return ligne(IC_EVT.propose,false,i.mk,U('eEcartAjout',{n:quiTexte(m)}),m.ts,att)+bulle(m,' ajout');
       return msgHtml(m,i.mk?tag(i.mk):'',st,!k);
     }).join('');
   }
   function renderFil(){
     const st=etatComp(curComp);
-    $('onglet-discussion').innerHTML=`💬 ${U('discussion')} <span class="compte">${st.msgs.length-st.masques.size}</span>`;
-    $('onglet-ecarts').hidden=true;
-    if(filOnglet==='ecarts')filOnglet=null;
-    R.querySelectorAll('.fil-onglet').forEach(b=>{b.classList.toggle('active',b.dataset.onglet===filOnglet);b.setAttribute('aria-expanded',b.dataset.onglet===filOnglet);});
+    // La poignée de la discussion : un clic la déploie ou l'escamote.
+    const pf=$('onglet-discussion'),ouvert=filOnglet==='discussion';
+    pf.innerHTML=`💬 ${U('discussion')} <span class="compte">${st.msgs.length-st.masques.size}</span><span class="chev" aria-hidden="true">▲</span>`;
+    pf.classList.toggle('active',ouvert);pf.setAttribute('aria-expanded',ouvert);
     const idx=COMP_ORDER.indexOf(curComp),prev=COMP_ORDER[idx-1],next=COMP_ORDER[idx+1];
     [[$('fil-prev'),prev,k=>'‹ '+k],[$('fil-next'),next,k=>k+' ›']].forEach(([b,k,txt])=>{b.style.visibility=k?'visible':'hidden';if(k){b.textContent=txt(k);b.title=T(COMPETENCES[k].subtitle);b.dataset.goto=k;}});
     $('fil-corps').hidden=!filOnglet;
@@ -1679,14 +1640,15 @@ function monter(host){
       etat.push(`<b>${esc(U('encMaitre'))}</b> ${esc(decompte(st,k))}`);
       if(estAdmin()&&st.probable.has(k))etat.push(`<span class="etiq-ecart probable">${U('probableCourt')}</span>`);
       if(st.attente.has(k))etat.push(`<span class="att">${esc(U('encAttente'))}</span>`);
-    }else if(!ecartsSur(st,k).length)etat.push(`<b>${esc(U('encHors'))}</b>`);
-    ecartsSur(st,k).forEach(({v,e})=>{etat.push(`<span><b>${esc(U('encAjout'))}</b> ${esc(U('encPar',{c:versionNom(v)}))}${e.etat==='classe'?` (${esc(U('classeCourt'))})`:''}</span>`);etat.push(`<span>${esc(decompte(st,k))}</span>`);});
+    }else if(!st.props[k])etat.push(`<b>${esc(U('encHors'))}</b>`);
+    const p=st.props[k];
+    if(p){etat.push(`<span><b>${esc(U('encAjout'))}</b> ${esc(U('encPar',{c:nomDe(p.x)}))}${p.etat==='classe'?` (${esc(U('classeCourt'))})`:''}</span>`);etat.push(`<span>${esc(decompte(st,k))}</span>`);}
     // Ce que montre le survol : la pondération et les sous-critères du critère, les précisions de l'élément, les noms des
     // votants. Le séparateur « · » ouvre l'élément qui le suit : il ne reste jamais seul en bout de ligne.
     const E=ecById(ec,c),L=elById(el,c),vv=votesDe(st,k);
     const liste=l=>l.length?`<ul>${l.map(x=>`<li>${esc(T(x))}</li>`).join('')}</ul>`:'';
-    // Les votants d'un lien qui compte ses votes (version maître ou ajout proposé), comme le décompte.
-    const montrerVotes=st.maitre[k]||ecartsSur(st,k).length>0;
+    // Les votants d'un lien qui compte ses votes (concordance ou ajout proposé), comme le décompte.
+    const montrerVotes=st.maitre[k]||!!p;
     const votants=(montrerVotes?[['👍',vv.pour],['👎',vv.contre]]:[]).filter(([,l])=>l.length).map(([ic,l])=>`<span class="votants">${ic} ${esc(noms(l))}</span>`).join('');
     $('encadre-boite').innerHTML=`<div class="encadre-tete"><h2 id="encadre-titre">${esc(lienTxt(k))}</h2><button type="button" class="btn-s" id="encadre-fermer" aria-label="${esc(U('fermer'))}" title="${esc(U('fermer'))}">✕</button></div>`
       +`<div class="encadre-def"><div><b>${esc(U('critere'))}</b> ${esc(T((E||{}).label))}${E?`<span class="enc-pts">${esc(ponderation(E))}</span>`:''}${E?liste(E.subs):''}</div>`
@@ -1727,14 +1689,14 @@ function monter(host){
   });
   // L'étiquette d'un lien ou d'un critère, dans la discussion : on montre le critère dans le référentiel.
   $('fil-liste').addEventListener('click',ev=>{
-    const b=ev.target.closest('[data-cible-ec],[data-cible]');if(!b)return;
-    const ec=b.dataset.cibleEc||deK(b.dataset.cible)[0];if(!ecById(ec))return;
+    const b=ev.target.closest('[data-cible]');if(!b)return;
+    const ec=deK(b.dataset.cible)[0];if(!ecById(ec))return;
     comp().indicateurs.forEach((ind,si)=>{if(ind.ecs.includes(ec))collapsedInds.delete(curComp+':'+si);});
     if(!vues.ref){vues.ref=true;garder('vues',JSON.stringify(vues));}
     expandedEcs.add(ec);render();
     const card=R.querySelector(`#sheet-ref [data-eckey="${ec}"]`);if(card)card.scrollIntoView({block:'nearest',behavior:'smooth'});
   });
-  R.querySelectorAll('.fil-onglet').forEach(b=>b.addEventListener('click',()=>{if(filOnglet===b.dataset.onglet){filOnglet=null;render();}else{ouvrirFil(b.dataset.onglet);if(enLigne&&pret)charger(true);}}));
+  R.querySelectorAll('.poignee-fil').forEach(b=>b.addEventListener('click',()=>{if(filOnglet===b.dataset.onglet){filOnglet=null;render();}else{ouvrirFil(b.dataset.onglet);if(pret)charger(true);}}));
   [$('fil-prev'),$('fil-next')].forEach(b=>b.addEventListener('click',()=>{if(b.dataset.goto)goToComp(b.dataset.goto);}));
 
   // ---- Envoi d'un message, avec mentions @ ----
@@ -1788,7 +1750,7 @@ function monter(host){
       C.ec.forEach(ec=>C.els.forEach(e=>{
         const k=K(ec.id,e.id);
         if(st.maitre[k]){if(st.attente.has(k))lignes.push({c,k,type:'maitre',st});}
-        else{const aj=ecartsSur(st,k,'ajoute').filter(a=>a.e.etat==='attente');if(aj.length)lignes.push({c,k,type:'ajout',aj,st});}
+        else{const p=st.props[k];if(p&&p.etat==='attente')lignes.push({c,k,type:'ajout',p,st});}
       }));
     });
     return lignes;
@@ -1799,7 +1761,7 @@ function monter(host){
     const st=l.st,dec=st.decision[l.k]||'',items=[],votants=new Set(votesDe(st,l.k).contre.map(x=>x.participant)),parVotant={};
     msgsLien(st,l.k).forEach(m=>{if(m.type==='contre'&&m.ts>dec&&votants.has(m.participant))parVotant[m.participant]=m;});
     Object.values(parVotant).forEach(m=>items.push({m,cls:''}));
-    (l.aj||[]).forEach(r=>{const parV={};msgsLien(st,l.k).forEach(m=>{if(m.type==='ecart'&&m.ts>=r.e.x.ts&&!st.masques.has(m))parV[m.version]=m;});Object.values(parV).forEach(m=>items.push({m,cls:'ajout'}));});
+    if(l.p){const parV={};msgsLien(st,l.k).forEach(m=>{if(m.type==='ecart'&&m.ts>=l.p.x.ts&&!st.masques.has(m))parV[m.participant]=m;});Object.values(parV).forEach(m=>items.push({m,cls:'ajout'}));}
     items.sort((a,b)=>a.m.ts<b.m.ts?-1:1);
     return items.length?`<ul class="raisons">${items.map(i=>`<li class="${i.cls}">${U('cite',{t:avecMentions(i.m.texte)})} <span class="detail" style="display:inline">— ${esc(quiTexte(i.m))}, ${dateCourte(i.m.ts)}</span></li>`).join('')}</ul>`:'';
   }
@@ -1810,15 +1772,69 @@ function monter(host){
     let h=`<h2>${esc(U('traiterTitre'))}</h2>`;
     if(!l.length)h+=`<p class="vide">${esc(U('traiterVide'))}</p>`;
     if(s1.length)h+=`<div class="section-t"><h3>${esc(U('traiterS1'))} <span class="compteur">${s1.length}</span></h3>${s1.map(x=>ligne(x,x.st.probable.has(x.k)?[`<span class="tag-t p">${U('probableCourt')}</span>`]:[],`<button type="button" class="btn-p" data-maintenir="${x.c}|${x.k}">${U('maintenir')}</button><button type="button" class="btn-p danger" data-retirer="${x.c}|${x.k}">${U('retirerLien')}</button>`)).join('')}</div>`;
-    if(s2.length)h+=`<div class="section-t"><h3>${esc(U('traiterS2'))} <span class="compteur">${s2.length}</span></h3>${s2.map(x=>ligne(x,x.aj.map(a=>`<span class="tag-t e">⇄ ${esc(U('ajoutePar',{c:versionNom(a.v)}))}</span>`),`<button type="button" class="btn-p" data-adopter-t="${x.c}|${x.k}|${x.aj[0].v}">${esc(U('adopterAjout'))}</button><button type="button" class="btn-s" data-classer-t="${x.c}|${x.k}|${x.aj.map(a=>a.v).join(',')}" title="${esc(U('classerTip'))}">${U('classer')}</button>`)).join('')}</div>`;
+    if(s2.length)h+=`<div class="section-t"><h3>${esc(U('traiterS2'))} <span class="compteur">${s2.length}</span></h3>${s2.map(x=>ligne(x,[`<span class="tag-t e">⇄ ${esc(U('ajoutePar',{c:nomDe(x.p.x)}))}</span>`],`<button type="button" class="btn-p" data-adopter-t="${x.c}|${x.k}">${esc(U('adopterAjout'))}</button><button type="button" class="btn-s" data-classer-t="${x.c}|${x.k}" title="${esc(U('classerTip'))}">${U('classer')}</button>`)).join('')}</div>`;
     const P=$('page-traiter');
     P.innerHTML=h;
-    const parts=s=>{const [c,ec,el,v]=s.split('|');return {c,k:K(ec,el),v};};
+    const parts=s=>{const [c,ec,el]=s.split('|');return {c,k:K(ec,el)};};
     P.querySelectorAll('[data-maintenir]').forEach(b=>b.addEventListener('click',()=>{const p=parts(b.dataset.maintenir);maintenir(p.c,p.k);}));
     P.querySelectorAll('[data-retirer]').forEach(b=>b.addEventListener('click',()=>{const p=parts(b.dataset.retirer);retirerMaitre(p.c,p.k);}));
     P.querySelectorAll('[data-adopter-t]').forEach(b=>b.addEventListener('click',()=>{const p=parts(b.dataset.adopterT);adopter(p.c,p.k);}));
     P.querySelectorAll('[data-classer-t]').forEach(b=>b.addEventListener('click',()=>{const p=parts(b.dataset.classerT);classer(p.c,p.k);}));
     P.querySelectorAll('[data-ouvrir]').forEach(b=>b.addEventListener('click',()=>{const p=parts(b.dataset.ouvrir);ouvrirCritere(p.c,deK(p.k)[0]);}));
+  }
+  // ---- Membres : regroupés par centre, pour tous. Le titre d'un centre porte, pour les administrateurs, ✎ (renommer)
+  // et « Fusionner avec… » (fusionner un doublon). Pas de courriel. ----
+  function renderMembres(){
+    const tri=centres.slice().sort((a,b)=>a.nom.localeCompare(b.nom,lang,{sensitivity:'base'}));
+    const parNom=(a,b)=>a.nom.localeCompare(b.nom,lang,{sensitivity:'base'});
+    const liste=l=>`<ul class="membres">${l.slice().sort(parNom).map(p=>`<li><b>${esc(p.nom)}</b>${p.role==='administrateur'?`<span class="role">admin</span>`:''}</li>`).join('')}</ul>`;
+    const ligneC=c=>{
+      const n=participants.filter(p=>p.centre===c.id).length;
+      const err=centreErreur&&centreErreur.id===c.id?`<span class="ident-erreur" role="alert">${esc(U(centreErreur.cle))}</span>`:'';
+      if(centreEdition&&centreEdition.id===c.id)return `<form class="ligne-c" data-centre-form="${esc(c.id)}"><input data-champ="centre" maxlength="80" value="${esc(centreEdition.nom)}" aria-label="${esc(U('renommer'))}"><span class="actions"><button type="submit" class="btn-p">${U('enregistrer')}</button><button type="button" class="btn-s" data-centre-annuler>${U('annuler')}</button></span>${err}</form>`;
+      if(centreFusion&&centreFusion.de===c.id){const v=centres.find(x=>x.id===centreFusion.vers);return `<div class="ligne-c"><span>${esc(U('confirmerFusion',{a:c.nom,b:v?v.nom:''}))}</span><span class="actions"><button type="button" class="btn-p danger" data-centre-fusionner>${U('fusionner')}</button><button type="button" class="btn-s" data-centre-annuler>${U('annuler')}</button></span>${err}</div>`;}
+      const autres=tri.filter(x=>x.id!==c.id);
+      const outils=estAdmin()?`<span class="actions"><button type="button" class="btn-s" data-centre-renommer="${esc(c.id)}" title="${esc(U('renommer'))}" aria-label="${esc(U('renommer'))}">✎</button>${autres.length?`<select data-centre-fusion="${esc(c.id)}" aria-label="${esc(U('fusionnerAvec'))}"><option value="">${esc(U('fusionnerAvec'))}</option>${autres.map(x=>`<option value="${esc(x.id)}">${esc(x.nom)}</option>`).join('')}</select>`:''}</span>`:'';
+      return `<div class="ligne-c"><span class="nom-c">${esc(c.nom)}</span><span class="detail">${esc(U(n===1?'nCompte':'nComptes',{n}))}</span>${outils}${err}</div>`;
+    };
+    // Un compte dont le centre n'est plus dans la liste (ou sans centre) : groupe « Sans centre », à la fin.
+    const sans=participants.filter(p=>!tri.some(c=>c.id===p.centre));
+    let h=`<h2>${esc(U('membres'))}</h2>`;
+    h+=tri.map(c=>`<div class="groupe-m" data-centre="${esc(c.id)}">${ligneC(c)}${liste(participants.filter(p=>p.centre===c.id))}</div>`).join('');
+    if(sans.length)h+=`<div class="groupe-m"><div class="ligne-c"><span class="nom-c">${esc(U('sansCentre'))}</span><span class="detail">${esc(U(sans.length===1?'nCompte':'nComptes',{n:sans.length}))}</span></div>${liste(sans)}</div>`;
+    const P=$('page-membres');
+    P.innerHTML=h;
+    if(estAdmin())lierCentres(P);
+  }
+  function lierCentres(P){
+    const raz=()=>{centreEdition=null;centreFusion=null;centreErreur=null;};
+    P.querySelectorAll('[data-centre-renommer]').forEach(b=>b.addEventListener('click',()=>{
+      const c=centres.find(x=>x.id===b.dataset.centreRenommer);if(!c)return;
+      raz();centreEdition={id:c.id,nom:c.nom};render();
+      const i=P.querySelector('[data-champ="centre"]');if(i){i.focus();i.select();}
+    }));
+    P.querySelectorAll('[data-centre-fusion]').forEach(s=>s.addEventListener('change',()=>{if(!s.value)return;raz();centreFusion={de:s.dataset.centreFusion,vers:s.value};render();}));
+    P.querySelectorAll('[data-centre-annuler]').forEach(b=>b.addEventListener('click',()=>{raz();render();}));
+    const f=P.querySelector('[data-centre-form]');
+    if(f){
+      f.querySelector('input').addEventListener('input',ev=>{centreEdition.nom=ev.target.value;});
+      f.addEventListener('submit',ev=>{
+        ev.preventDefault();const id=f.dataset.centreForm,nomC=centreEdition.nom.trim(),c=centres.find(x=>x.id===id);
+        if(!nomC)return;
+        if(c&&c.nom===nomC){raz();render();return;}
+        gererCentres({renommer:{id,nom:nomC}},id);
+      });
+    }
+    const fu=P.querySelector('[data-centre-fusionner]');
+    if(fu)fu.addEventListener('click',()=>gererCentres({fusionner:{de:centreFusion.de,vers:centreFusion.vers}},centreFusion.de));
+  }
+  // Une opération sur les centres : la feuille répond avec tout, comme pour un geste. Un nom déjà pris est refusé.
+  function gererCentres(op,id){
+    sync='envoi';render();
+    return enFile(()=>backend.centres(op).then(d=>{appliquer(d);sync='';centreEdition=null;centreFusion=null;centreErreur=null;},e=>{
+      if(e.message==='doublon'){sync='';centreErreur={id,cle:'eDoublon'};return;}
+      sync=erreur(e);centreFusion=null;
+    }).then(()=>render()));
   }
   // Ouvrir une compétence sur un critère : déplié et montré dans le référentiel.
   function ouvrirCritere(c,ec){
@@ -1840,9 +1856,9 @@ function monter(host){
       st.evts.forEach(e=>{
         if(e.attente||e.masque||e.x.participant===moi())return;
         const v=st.mesVotes[e.k+'#'+moi()],eff=e.effet||e.type;
-        if(e.version===''&&(eff==='maintenu'||eff==='retrait')&&v&&v.sens==='contre'&&e.x.ts>v.ts)l.push({ts:e.x.ts,c,k:e.k,ic:'⚖',txt:U(eff==='maintenu'?'nDecisionMaintenu':'nDecisionRetrait',{n:quiTexte(e.x),l:lienTxt(e.k),comp:c})});
-        if(e.version===''&&eff==='remis'&&v&&v.sens!=='retrait'&&e.x.ts>v.ts)l.push({ts:e.x.ts,c,k:e.k,ic:'↺',txt:U('nRemis',{l:lienTxt(e.k),comp:c})});
-        if(maVersion()&&e.version===maVersion()&&(e.type==='adopte'||e.type==='classe'))l.push({ts:e.x.ts,c,k:e.k,ic:'⇄',txt:U(e.type==='adopte'?'nAdopte':'nClasse',{n:quiTexte(e.x),l:lienTxt(e.k),comp:c})});
+        if((eff==='maintenu'||eff==='retrait')&&v&&v.sens==='contre'&&e.x.ts>v.ts)l.push({ts:e.x.ts,c,k:e.k,ic:'⚖',txt:U(eff==='maintenu'?'nDecisionMaintenu':'nDecisionRetrait',{n:quiTexte(e.x),l:lienTxt(e.k),comp:c})});
+        if(eff==='remis'&&v&&v.sens!=='retrait'&&e.x.ts>v.ts)l.push({ts:e.x.ts,c,k:e.k,ic:'↺',txt:U('nRemis',{l:lienTxt(e.k),comp:c})});
+        if(e.prop&&e.prop.participant===moi()&&(e.type==='adopte'||e.type==='classe'))l.push({ts:e.x.ts,c,k:e.k,ic:'⇄',txt:U(e.type==='adopte'?'nAdopte':'nClasse',{n:quiTexte(e.x),l:lienTxt(e.k),comp:c})});
       });
     });
     l.sort((a,b)=>a.ts<b.ts?1:-1);
@@ -1878,12 +1894,15 @@ function monter(host){
     const m=$('menu-reglages'),tel=racine.getBoundingClientRect().width>0&&getComputedStyle($('reglages')).display!=='none';
     if(tel&&identEntete.parentNode!==m)m.append(identEntete,$('lang-btn'),$('theme-btn'));
     else if(!tel&&identEntete.parentNode===m){ouvrirReglages(false);$('undo-btn').before(identEntete,$('lang-btn'));$('undo-btn').after($('theme-btn'));}
-    if(tel!==enTel){enTel=tel;libVues();}
   }
-  // Vues : sur un téléphone, l'icône seule; le libellé entier reste le nom du bouton.
-  function libVues(){[['vue-prog','progShort'],['vue-ref','refShort']].forEach(([id,k])=>{const b=$(id),t=U(k);b.textContent=enTel?t.split(' ')[0]:t;b.setAttribute('aria-label',t);});}
   placerReglages();
-  if(window.ResizeObserver)new ResizeObserver(placerReglages).observe(racine);else window.addEventListener('resize',placerReglages);
+  // Passage de côte à côte à empilés, ou l'inverse : les documents se redessinent (poignées ou accordéons).
+  const surRedim=()=>{
+    placerReglages();
+    if($('app').hidden||$('content-row').hidden||pileRendu===null)return;
+    if(empile()!==pileRendu)render();
+  };
+  if(window.ResizeObserver)new ResizeObserver(surRedim).observe(racine);else window.addEventListener('resize',surRedim);
   $('btn-reglages').addEventListener('click',()=>{
     if(!reglagesOuvert&&notifsOuvert){notifsOuvert=false;garder('notifs_lu',new Date().toISOString());render();}
     ouvrirReglages(!reglagesOuvert);
@@ -1909,44 +1928,58 @@ function monter(host){
   }
   function renderTout(){
     majSync();majIdent();
-    if(!pret&&enLigne)return;
-    if(enLigne&&!connecte()){if(!porte)ouvrirPorte();return;}
+    if(!pret)return;
+    if(!connecte()){if(!porte)ouvrirPorte();return;}
     renderEncadre();
     if(!$('landing').hidden){renderAccueil();return;}
     buildNav();updateHeader();
-    const traiter=page==='traiter'&&estAdmin();
+    const traiter=page==='traiter'&&estAdmin(),membres=page==='membres';
     if(page==='traiter'&&!traiter)page='';
-    $('content-row').hidden=traiter;$('fil').hidden=traiter;$('page-traiter').hidden=!traiter;
-    R.querySelector('.vues').hidden=traiter;
+    $('content-row').hidden=traiter||membres;$('fil').hidden=traiter||membres;$('page-traiter').hidden=!traiter;$('page-membres').hidden=!membres;
+
     renderNotifs();
     if(traiter){renderTraiter();return;}
-    if(selectedEc&&(!vues.prog||!peutEditer()))selectedEc=null;
-    if(ajoutOuvert&&(!vues.prog||!maVersion()||!ecById(ajoutOuvert)))ajoutOuvert=null;
-    $('pane-prog').hidden=!vues.prog;$('pane-ref').hidden=!vues.ref;
-    if(vues.prog)renderProgramme($('sheet-prog'));else $('sheet-prog').innerHTML='';
-    if(vues.ref)renderReferentiel($('sheet-ref'));else $('sheet-ref').innerHTML='';
+    if(membres){renderMembres();return;}
+    if(selectedEc&&(!vues.prog||!estAdmin()))selectedEc=null;
+    if(ajoutOuvert&&(!vues.prog||!proposeur()||!ecById(ajoutOuvert)))ajoutOuvert=null;
+    // Côte à côte : un document refermé laisse sa poignée sur sa marge, et la barre du milieu disparaît. Empilés
+    // (téléphone) : les deux documents restent, chacun replié sur son titre ou déplié.
+    const pile=empile();pileRendu=pile;
+    if(!pile&&!vues.prog&&!vues.ref){vues={prog:true,ref:true};garder('vues',JSON.stringify(vues));}
+    const voir={prog:pile||vues.prog,ref:pile||vues.ref};
+    $('pane-prog').hidden=!voir.prog;$('pane-ref').hidden=!voir.ref;
+    $('barre-docs').hidden=pile||!(vues.prog&&vues.ref);
+    $('poignee-prog').hidden=pile||vues.prog;$('poignee-ref').hidden=pile||vues.ref;
+    if(voir.prog)renderProgramme($('sheet-prog'));else $('sheet-prog').innerHTML='';
+    if(voir.ref)renderReferentiel($('sheet-ref'));else $('sheet-ref').innerHTML='';
     bindCrossHover();
     renderFil();
   }
 
   function goToComp(k){
-    curComp=k;garder('comp',k);expandedEcs.clear();expandedEls.clear();collapsedInds.clear();selectedEc=null;brouillons={};voteContre=null;encadre=null;msgEdition=null;msgSuppr=null;ajoutOuvert=null;
+    curComp=k;garder('comp',k);expandedEcs.clear();expandedEls.clear();collapsedInds.clear();selectedEc=null;voteContre=null;encadre=null;msgEdition=null;msgSuppr=null;ajoutOuvert=null;
     if(etroit())navOpen=false;   // sur petit écran, le menu se superpose au contenu
     vueActive='app';$('landing').hidden=true;$('app').hidden=false;
     render();R.querySelectorAll('.pane,.content-row').forEach(p=>p.scrollTop=0);
   }
   function goHome(){
     vueActive='landing';$('app').hidden=true;$('landing').hidden=false;page='';
-    expandedEcs.clear();expandedEls.clear();collapsedInds.clear();selectedEc=null;filOnglet=null;brouillons={};voteContre=null;encadre=null;ajoutOuvert=null;
+    expandedEcs.clear();expandedEls.clear();collapsedInds.clear();selectedEc=null;filOnglet=null;voteContre=null;encadre=null;ajoutOuvert=null;
     render();
   }
 
   $('comp-grille').addEventListener('click',ev=>{const b=ev.target.closest('[data-comp]');if(b)goToComp(b.dataset.comp);});
-  R.querySelectorAll('.vue-btn').forEach(b=>b.addEventListener('click',()=>{
-    const k=b.dataset.vue,autre=k==='prog'?'ref':'prog';
-    if(vues[k]&&!vues[autre])return;   // toujours au moins un document affiché
-    vues[k]=!vues[k];garder('vues',JSON.stringify(vues));render();
-  }));
+  // Les flèches de la barre du milieu referment un document, et sa poignée prend le focus; la poignée le rouvre. Le
+  // titre d'un document empilé le replie ou le déplie.
+  function basculerDoc(d,o){
+    vues[d]=o;garder('vues',JSON.stringify(vues));render();
+    const p=$('poignee-'+d);if(!o&&!p.hidden)p.focus();
+  }
+  $('fermer-prog').addEventListener('click',()=>basculerDoc('prog',false));
+  $('fermer-ref').addEventListener('click',()=>basculerDoc('ref',false));
+  $('poignee-prog').addEventListener('click',()=>basculerDoc('prog',true));
+  $('poignee-ref').addEventListener('click',()=>basculerDoc('ref',true));
+  $('content-row').addEventListener('click',ev=>{const b=ev.target.closest('[data-plier]');if(b)basculerDoc(b.dataset.plier,!vues[b.dataset.plier]);});
   host.dataset.theme=lire('theme')==='dark'?'dark':'light';
   $('theme-btn').addEventListener('click',()=>{host.dataset.theme=host.dataset.theme==='dark'?'light':'dark';garder('theme',host.dataset.theme);});
   $('undo-btn').addEventListener('click',undo);
@@ -1978,15 +2011,17 @@ function monter(host){
   $('nav-toggle').addEventListener('click',()=>{navOpen=!navOpen;$('left-nav').classList.toggle('collapsed',!navOpen);});
   R.querySelector('.main-area').addEventListener('click',()=>{if(navOpen&&etroit()){navOpen=false;$('left-nav').classList.add('collapsed');}});
   $('nav-home').addEventListener('click',goHome);
+  $('nav-membres').addEventListener('click',()=>{
+    page='membres';selectedEc=null;centreEdition=null;centreFusion=null;centreErreur=null;
+    if(etroit())navOpen=false;
+    render();$('page-membres').scrollTop=0;
+  });
   $('crossref-cb').addEventListener('change',ev=>{crossRef=ev.target.checked;render();});
 
   applyUI();
-  if(enLigne){afficherVerrou('verrouChargement');charger();}
-  else{afficherContenu();render();charger();}
-  if(enLigne){
-    setInterval(()=>{if(pret&&!document.hidden&&!enAttente.length&&!msgAttente.length&&!voteAttente.length)charger(true);},60000);
-    document.addEventListener('visibilitychange',()=>{if(pret&&!document.hidden)charger(true);});
-  }
+  afficherVerrou('verrouChargement');charger();
+  setInterval(()=>{if(pret&&!document.hidden&&!enAttente.length&&!msgAttente.length&&!voteAttente.length)charger(true);},60000);
+  document.addEventListener('visibilitychange',()=>{if(pret&&!document.hidden)charger(true);});
 }
 
 customElements.define('concordance-5319',class extends HTMLElement{connectedCallback(){if(!this.shadowRoot)monter(this);}});
