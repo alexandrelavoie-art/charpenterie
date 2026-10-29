@@ -6,6 +6,9 @@
    L'outil vit dans un Shadow DOM : ses styles n'atteignent pas la page hôte et ceux du thème ne l'atteignent pas.
    Enregistrement : la feuille Google partagée (URL_FEUILLE, ou l'attribut feuille, p. ex. la page d'essai DEV). Une page
    qui donne l'attribut feuille garde ses données de navigateur à part (préfixe dep5319dev_).
+   Référentiel verrouillé : la page publiée charge une copie chiffrée de donnees-5319.js ({chiffre: {iv, donnees}},
+   faite par publier.mjs). La première lecture complète de la feuille, avec un bon code d'accès, donne la clé (cle), et
+   l'outil la déverrouille avant tout affichage. La copie en clair, ouverte en local, s'affiche telle quelle.
    Modèle (voir PLAN-DE-TRAVAIL.md) :
    - Journal {ts, comp, ec, el, geste, nom, participant}, rejoué dans l'ordre sur les liens proposés (defaultLinks).
      Geste : proposé (un participant propose d'ajouter le lien; un seul par lien, qui vit tant qu'au moins une personne
@@ -787,7 +790,9 @@ function monter(host){
   if(!document.querySelector('link[data-concordance-polices]')){const l=document.createElement('link');l.rel='stylesheet';l.href=POLICES;l.dataset.concordancePolices='';document.head.appendChild(l);}
   R.innerHTML=`<style>${CSS}</style>${GABARIT}`;
   const $=id=>R.getElementById(id);
-  const COMP_ORDER=D.ordre,COMPETENCES=D.competences;
+  // Référentiel verrouillé : vide jusqu'à deverrouiller(), qui le remplit en place.
+  const verrouille=!!D.chiffre;
+  const COMP_ORDER=verrouille?[]:D.ordre,COMPETENCES=verrouille?{}:D.competences;
   const urlFeuille=host.getAttribute('feuille')||URL_FEUILLE;
   // Attribut feuille (page d'essai DEV) : code, compte et mot de passe gardés à part de ceux de la page de production.
   const pre=host.hasAttribute('feuille')?'dep5319dev_':'dep5319_';
@@ -872,7 +877,7 @@ function monter(host){
     $('verrou-titre').textContent=U('verrouTitre');$('verrou-expl').textContent=U('verrouExpl');$('verrou-l').textContent=U('verrouCode');$('verrou-ok').textContent=U('verrouOk');
     updateUndoBtn();
   }
-  function setLang(l){lang=l;garder('lang',l);applyUI();if(!$('ident').hidden)modeIdentite(modeIdent);render();}
+  function setLang(l){lang=l;garder('lang',l);applyUI();if(!$('ident').hidden)modeIdentite(modeIdent);if(COMP_ORDER.length)render();}
 
   // ---- Données partagées (feuille Google) ou locales (ce navigateur) ----
   // Numéro de version de la feuille : la lecture de routine (chaque minute, retour sur l'onglet) le donne, et la feuille
@@ -880,7 +885,21 @@ function monter(host){
   // envoyé à un script qui n'en donne pas (ancienne version du script).
   let versionFeuille=null,lectureComplete=0;
   const RELECTURE_MS=600000;
-  function reponse(r){if(!r.ok)throw new Error('reseau');return r.json().then(x=>{if(!x||!x.ok)throw new Error(x&&x.erreur||'reseau');if(x.inchange)return {inchange:true,version:x.version};return {journal:x.journal||[],messages:x.messages||[],votes:x.votes||[],centres:x.centres||[],participants:x.participants||[],compte:x.compte,version:x.version};});}
+  function reponse(r){if(!r.ok)throw new Error('reseau');return r.json().then(x=>{if(!x||!x.ok)throw new Error(x&&x.erreur||'reseau');if(x.inchange)return {inchange:true,version:x.version};return {journal:x.journal||[],messages:x.messages||[],votes:x.votes||[],centres:x.centres||[],participants:x.participants||[],compte:x.compte,version:x.version,cle:x.cle};});}
+  // Déverrouille le référentiel (AES-GCM) avec la clé donnée par la feuille, une fois par ouverture. Sans clé (script
+  // d'une version antérieure) ou avec une clé qui ne va pas, l'outil reste sur l'écran du code, avec l'erreur réseau.
+  function deverrouiller(cle){
+    if(!verrouille||COMP_ORDER.length)return Promise.resolve();
+    if(!cle)return Promise.reject(new Error('reseau'));
+    const octets=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+    return crypto.subtle.importKey('raw',octets(cle),'AES-GCM',false,['decrypt'])
+      .then(k=>crypto.subtle.decrypt({name:'AES-GCM',iv:octets(D.chiffre.iv)},k,octets(D.chiffre.donnees)))
+      .then(b=>{
+        const x=JSON.parse(new TextDecoder().decode(b));
+        COMP_ORDER.push(...x.ordre);Object.assign(COMPETENCES,x.competences);
+        curComp=COMPETENCES[lire('comp')]?lire('comp'):COMP_ORDER[0];
+      },()=>{throw new Error('reseau');});
+  }
   const poster=b=>fetch(urlFeuille,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({code,...b})}).then(reponse);
   const backend={
     charger:v=>fetch(urlFeuille+(urlFeuille.includes('?')?'&':'?')+'code='+encodeURIComponent(code)+(v!=null?'&version='+encodeURIComponent(v):'')+'&t='+Date.now()).then(reponse),
@@ -929,7 +948,7 @@ function monter(host){
       // Le relevé qui précède les 10 minutes relit tout : le suivant, une minute plus tard, arriverait après.
       const v=silencieux&&pret&&versionFeuille!=null&&Date.now()-lectureComplete+60000<=RELECTURE_MS?versionFeuille:null;
       return backend.charger(v);
-    }).then(d=>{
+    }).then(d=>d.inchange?d:deverrouiller(d.cle).then(()=>d)).then(d=>{
       if(d.inchange){if(d.version!=null)versionFeuille=String(d.version);if(sync!=='envoi')sync='';return sync!==syncAvant;}
       const change=appliquer(d);
       if(sync!=='envoi')sync='';
