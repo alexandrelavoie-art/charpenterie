@@ -27,6 +27,8 @@
 
 // URL de l'application Web Google Apps Script (voir LISEZMOI.md).
 const URL_FEUILLE='https://script.google.com/macros/s/AKfycbyGwb6rlwT_fTwrh4HwZ_pYlkH-2RKd9C5fYWQRcxr6L6KdHE4TKOKTHjtI2Jajj4vq/exec';
+// Dossier du script : les fichiers publiés à côté de lui (aide-5319.json), même depuis une page WordPress.
+const BASE=((document.currentScript&&document.currentScript.src)||'').replace(/[^/]*$/,'');
 const POLICES='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
 
 const CSS=`
@@ -436,6 +438,9 @@ button,select{font-family:inherit;}
 .aide li{margin-bottom:4px;}
 .aide a{color:var(--accent);}
 .aide .nw{white-space:nowrap;}
+.aide .capture{margin:10px 0 16px;}
+.aide .capture img{display:block;max-width:100%;height:auto;min-height:40px;border:1px solid var(--border);border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.08);background:var(--surface);}
+.aide figcaption{font-size:12px;color:var(--fg-muted);margin-top:6px;}
 .section-t{margin-bottom:20px;max-width:1150px;}
 .section-t h3{font-size:13px;margin-bottom:4px;}
 .ligne-t{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 12px;align-items:start;background:var(--surface);border:1px solid var(--border-soft);border-radius:4px;padding:8px 12px;margin-bottom:6px;font-size:12.5px;}
@@ -833,12 +838,14 @@ const AIDE={
 <li><b>☰</b> ouvre la liste des compétences, la page <b>Membres</b> et ce mode d'emploi.</li>
 <li>La case <b>Liens</b>, en haut, affiche ou masque les pastilles qui relient un document à l'autre.</li>
 </ul>
+<figure class="capture"><img data-capture="ecran" alt=""><figcaption>Une compétence : le programme d'études à gauche, le référentiel d'évaluation à droite, la discussion en bas.</figcaption></figure>
 <h3>Lire un lien</h3>
 <p>Sous chaque critère d'évaluation, une pastille par élément relié (<span class="nw">Él.2, Él.3…</span>). Survolez-la pour lire l'élément. Dans le programme, les éléments reliés à au moins un critère sont mis en relief.</p>
 <ul>
 <li><b>Pastille pâle, en pointillés :</b> un ajout proposé par un participant. Survolez-la pour savoir qui l'a proposé et pourquoi.</li>
 </ul>
 <p>Cliquez sur une pastille pour ouvrir l'encadré du lien : tout ce qui le concerne, dans l'ordre. L'encadré donne aussi le critère avec sa pondération (« 10 pts », ou « Oui / Non ») et ses sous-critères, l'élément avec ses précisions, et le nom des personnes qui ont voté pour ou contre. Côté programme, une pastille de critère (<span class="nw">CE-03…</span>) ouvre l'encadré du même lien.</p>
+<figure class="capture"><img data-capture="lien" alt=""><figcaption>L'encadré d'un lien : le critère, l'élément, les votes et la discussion du lien.</figcaption></figure>
 <h3>Voter</h3>
 <p>À côté de chaque pastille, celles de la concordance comme les ajouts proposés :</p>
 <ul>
@@ -846,6 +853,7 @@ const AIDE={
 <li><b>👎</b> : vous êtes contre. Écrivez une raison d'une ligne : elle s'affiche dans la discussion de la compétence. Retirer votre vote la retire aussi.</li>
 </ul>
 <p>Votre propre vote est le pouce coloré. Le chiffre du 👎 est <b>rouge</b> tant que les administrateurs n'ont pas tranché, gris ensuite. Survolez les pouces, ou ouvrez l'encadré du lien, pour voir qui a voté.</p>
+<figure class="capture"><img data-capture="voter" alt=""><figcaption>Un critère, sa pastille d'élément et ses pouces : votre 👍 est coloré. Le + propose un ajout.</figcaption></figure>
 <h3>Proposer un ajout</h3>
 <ol>
 <li>Cliquez sur le <b>+</b> au bout de la rangée de pastilles d'un critère : le programme passe en mode ajout, en violet, et chaque élément que vous pouvez proposer porte la mention « Cliquer ici pour proposer l'ajout ».</li>
@@ -854,18 +862,21 @@ const AIDE={
 </ol>
 <p>Si un ajout est déjà proposé, appuyez-le d'un 👍 plutôt que de le proposer de nouveau. Pour retirer votre proposition, retirez votre 👍 : si personne d'autre ne l'appuie, elle disparaît. Pour qu'un lien existant soit retiré, votez contre.</p>
 <p>Les administrateurs peuvent <b>adopter</b> un ajout proposé (la concordance change) ou <b>ne pas le retenir</b> : il reste alors visible, avec la mention « non retenue ».</p>
+<figure class="capture"><img data-capture="ajout" alt=""><figcaption>Le mode ajout : chaque élément que vous pouvez proposer porte « Cliquer ici pour proposer l'ajout ».</figcaption></figure>
 <h3>Discuter</h3>
 <ul>
 <li>La languette <b>💬 Discussion</b>, en bas de l'écran, déploie ou escamote la discussion de la compétence. Elle réunit tout ce qui s'y passe, dans l'ordre : les messages, et chaque geste en ligne discrète avec l'étiquette du lien (vote contre, proposition, décision des administrateurs). La raison qui accompagne un geste le suit.</li>
 <li>Tapez <b>@</b> suivi d'un nom pour mentionner quelqu'un. La personne en sera avisée. Ctrl+Entrée envoie le message.</li>
 <li>Au survol de vos propres messages, <b>✎</b> les modifie et <b>🗑</b> les supprime. Sur un téléphone ou une tablette, ces deux icônes restent affichées.</li>
 </ul>
+<figure class="capture"><img data-capture="discussion" alt=""><figcaption>La discussion de la compétence : les messages, et les gestes en lignes discrètes, avec l'étiquette du lien.</figcaption></figure>
 <h3>Le programme et le référentiel</h3>
 <ul>
 <li>Chaque document ouvert porte une languette à sa couleur sur son bord extérieur : <b>‹</b>, à gauche du programme, le referme; <b>›</b>, à droite du référentiel, le referme aussi. L'autre document prend alors toute la largeur.</li>
 <li>Le document refermé devient une languette étroite, sur le bord de l'écran, qui porte son nom : cliquez dessus pour le rouvrir.</li>
 <li>Le <b>+</b> rouvre le programme au besoin.</li>
 </ul>
+<figure class="capture"><img data-capture="languettes" alt=""><figcaption>Le programme refermé : sa languette, sur le bord de l'écran, le rouvre.</figcaption></figure>
 <h3>Sur un téléphone ou une tablette</h3>
 <ul>
 <li>Sur un écran étroit, le programme et le référentiel s'affichent l'un sous l'autre. Touchez le titre d'un document pour le replier, puis de nouveau pour le déplier.</li>
@@ -873,6 +884,7 @@ const AIDE={
 <li>Il n'y a pas de survol : touchez une pastille pour ouvrir l'encadré du lien.</li>
 <li>Après un toucher sur <b>+</b>, l'écran descend jusqu'au programme, où vous choisissez l'élément.</li>
 </ul>
+<figure class="capture"><img data-capture="telephone" alt=""><figcaption>Sur un téléphone : les documents l'un sous l'autre, la discussion en bas.</figcaption></figure>
 <h3>Membres</h3>
 <p>La page <b>Membres</b> montre tous les membres, regroupés par centre. Elle s'ouvre par le bouton <b>Membres</b>, en haut à gauche de l'accueil, ou par <b>☰</b>.</p>
 <h3>Notifications</h3>
@@ -890,12 +902,14 @@ const AIDE={
 <li><b>☰</b> opens the list of competencies, the <b>Members</b> page and this guide.</li>
 <li>The <b>Links</b> box, at the top, shows or hides the badges that link one document to the other.</li>
 </ul>
+<figure class="capture"><img data-capture="ecran" alt=""><figcaption>A competency: the Program of Study on the left, the Specifications for Evaluation on the right, the discussion at the bottom.</figcaption></figure>
 <h3>Reading a link</h3>
 <p>Under each evaluation criterion, one badge per linked element (<span class="nw">El.2, El.3…</span>). Hover over it to read the element. In the program, elements linked to at least one criterion are highlighted.</p>
 <ul>
 <li><b>Pale, dotted badge:</b> an addition proposed by a participant. Hover over it to see who proposed it and why.</li>
 </ul>
 <p>Click a badge to open the link's panel: everything about it, in order. The panel also shows the criterion with its weighting ("10 marks", or "Yes / No") and its sub-criteria, the element with its details, and the names of the people who voted for or against. On the program side, a criterion badge (<span class="nw">EC-03…</span>) opens the panel of the same link.</p>
+<figure class="capture"><img data-capture="lien" alt=""><figcaption>A link's panel: the criterion, the element, the votes and the link's discussion.</figcaption></figure>
 <h3>Voting</h3>
 <p>Next to each badge, for links in the cross-reference as well as proposed additions:</p>
 <ul>
@@ -903,6 +917,7 @@ const AIDE={
 <li><b>👎</b>: you are against it. Write a one-line reason: it appears in the competency's discussion. Removing your vote removes it too.</li>
 </ul>
 <p>Your own vote is the coloured thumb. The 👎 count is <b>red</b> until the administrators have decided, grey afterwards. Hover over the thumbs, or open the link's panel, to see who voted.</p>
+<figure class="capture"><img data-capture="voter" alt=""><figcaption>A criterion, its element badge and its thumbs: your 👍 is coloured. The + proposes an addition.</figcaption></figure>
 <h3>Proposing an addition</h3>
 <ol>
 <li>Click the <b>+</b> at the end of a criterion's row of badges: the program switches to addition mode, in purple, and each element you can propose is marked "Click here to propose the addition".</li>
@@ -911,18 +926,21 @@ const AIDE={
 </ol>
 <p>If an addition has already been proposed, support it with a 👍 rather than proposing it again. To withdraw your proposal, remove your 👍: if nobody else supports it, it disappears. To have an existing link removed, vote against it.</p>
 <p>The administrators can <b>adopt</b> a proposed addition (the cross-reference changes) or <b>not retain</b> it: it then stays visible, marked "not retained".</p>
+<figure class="capture"><img data-capture="ajout" alt=""><figcaption>Addition mode: each element you can propose is marked "Click here to propose the addition".</figcaption></figure>
 <h3>Discussing</h3>
 <ul>
 <li>The <b>💬 Discussion</b> tab, at the bottom of the screen, opens or closes the competency's discussion. It gathers everything that happens in it, in order: messages, and each action as a discreet line with the link's label (vote against, proposal, administrators' decision). The reason given with an action follows it.</li>
 <li>Type <b>@</b> followed by a name to mention someone. They will be notified. Ctrl+Enter sends the message.</li>
 <li>When you hover over your own messages, <b>✎</b> edits them and <b>🗑</b> deletes them. On a phone or tablet, these two icons stay visible.</li>
 </ul>
+<figure class="capture"><img data-capture="discussion" alt=""><figcaption>The competency's discussion: messages, and actions as discreet lines, with the link's label.</figcaption></figure>
 <h3>The program and the specifications</h3>
 <ul>
 <li>Each open document has a tab in its colour on its outer edge: <b>‹</b>, left of the program, closes it; <b>›</b>, right of the specifications, closes them too. The other document then takes the full width.</li>
 <li>The closed document becomes a narrow tab on the edge of the screen, bearing its name: click it to reopen it.</li>
 <li>The <b>+</b> reopens the program when needed.</li>
 </ul>
+<figure class="capture"><img data-capture="languettes" alt=""><figcaption>The program closed: its tab, on the edge of the screen, reopens it.</figcaption></figure>
 <h3>On a phone or tablet</h3>
 <ul>
 <li>On a narrow screen, the program and the specifications are shown one below the other. Tap a document's title to fold it, and again to unfold it.</li>
@@ -930,6 +948,7 @@ const AIDE={
 <li>There is no hovering: tap a badge to open the link's panel.</li>
 <li>After tapping <b>+</b>, the screen scrolls down to the program, where you choose the element.</li>
 </ul>
+<figure class="capture"><img data-capture="telephone" alt=""><figcaption>On a phone: the documents one below the other, the discussion at the bottom.</figcaption></figure>
 <h3>Members</h3>
 <p>The <b>Members</b> page shows all members, grouped by centre. It opens from the <b>Members</b> button, at the top left of the home page, or from <b>☰</b>.</p>
 <h3>Notifications</h3>
@@ -1064,14 +1083,20 @@ function monter(host){
   function reponse(r){if(!r.ok)throw new Error('reseau');return r.json().then(x=>{if(!x||!x.ok)throw new Error(x&&x.erreur||'reseau');if(x.inchange)return {inchange:true,version:x.version};return {journal:x.journal||[],messages:x.messages||[],votes:x.votes||[],centres:x.centres||[],participants:x.participants||[],compte:x.compte,version:x.version,cle:x.cle};});}
   // Déverrouille le référentiel (AES-GCM) avec la clé donnée par la feuille, une fois par ouverture. Sans clé (script
   // d'une version antérieure) ou avec une clé qui ne va pas, l'outil reste sur l'écran du code, avec l'erreur réseau.
+  const octets=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  let cleDonnees='';   // la clé reçue de la feuille, gardée pour les captures du mode d'emploi
+  // Un fichier verrouillé {iv, donnees} (AES-GCM) : son JSON en clair.
+  function dechiffrer(c){
+    return crypto.subtle.importKey('raw',octets(cleDonnees),'AES-GCM',false,['decrypt'])
+      .then(k=>crypto.subtle.decrypt({name:'AES-GCM',iv:octets(c.iv)},k,octets(c.donnees)))
+      .then(b=>JSON.parse(new TextDecoder().decode(b)));
+  }
   function deverrouiller(cle){
     if(!verrouille||COMP_ORDER.length)return Promise.resolve();
     if(!cle)return Promise.reject(new Error('reseau'));
-    const octets=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-    return crypto.subtle.importKey('raw',octets(cle),'AES-GCM',false,['decrypt'])
-      .then(k=>crypto.subtle.decrypt({name:'AES-GCM',iv:octets(D.chiffre.iv)},k,octets(D.chiffre.donnees)))
-      .then(b=>{
-        const x=JSON.parse(new TextDecoder().decode(b));
+    cleDonnees=cle;
+    return dechiffrer(D.chiffre)
+      .then(x=>{
         COMP_ORDER.push(...x.ordre);Object.assign(COMPETENCES,x.competences);
         curComp=COMPETENCES[lire('comp')]?lire('comp'):COMP_ORDER[0];
       },()=>{throw new Error('reseau');});
@@ -2018,8 +2043,24 @@ function monter(host){
     P.innerHTML=h;
     if(estAdmin()){lierCentres(P);lierMembres(P);}
   }
+  // Captures du mode d'emploi : publiées verrouillées dans aide-5319.json (elles montrent des bouts du référentiel),
+  // chargées à la première ouverture de la page; en local, le référentiel en clair va avec les images du dossier aide/.
+  // Une capture introuvable : sa figure disparaît.
+  let captures=null;
+  function chargerCaptures(){
+    if(!captures)captures=verrouille
+      ?fetch(BASE+'aide-5319.json').then(r=>{if(!r.ok)throw new Error('captures');return r.json();}).then(dechiffrer).then(m=>n=>m[n]||'').catch(()=>{captures=null;return ()=>'';})
+      :Promise.resolve(n=>BASE+'aide/'+n+'.webp');
+    return captures;
+  }
   function renderAide(){
-    $('page-aide').innerHTML=`<h2>${esc(U('aide'))}</h2><div class="aide">${AIDE[lang].split('{courriel}').join(esc(COURRIEL_SOUTIEN))}</div>`;
+    const P=$('page-aide');
+    P.innerHTML=`<h2>${esc(U('aide'))}</h2><div class="aide">${AIDE[lang].split('{courriel}').join(esc(COURRIEL_SOUTIEN))}</div>`;
+    chargerCaptures().then(src=>P.querySelectorAll('img[data-capture]').forEach(i=>{
+      const s=src(lang+'-'+i.dataset.capture);
+      if(!s){i.closest('figure').hidden=true;return;}
+      i.addEventListener('error',()=>{i.closest('figure').hidden=true;});i.src=s;
+    }));
   }
   function membresParCentre(tri,parNom){
     const liste=l=>`<ul class="membres">${l.slice().sort(parNom).map(p=>`<li><b>${esc(p.nom)}</b>${p.role==='administrateur'?`<span class="role">admin</span>`:''}</li>`).join('')}</ul>`;
