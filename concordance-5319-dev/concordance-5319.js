@@ -52,7 +52,10 @@ button,input,textarea{font-family:inherit}
 .racine{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden;font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.5;font-weight:400;font-style:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;text-align:left;text-indent:0;white-space:normal;background:var(--page-bg);color:var(--fg);padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);container-type:inline-size;}
 
 /* Accueil : choix parmi les 19 compétences */
-.landing{background:var(--page-bg);flex:1;overflow-y:auto;padding:20px 16px 28px;}
+.landing{position:relative;background:var(--page-bg);flex:1;overflow-y:auto;padding:20px 16px 28px;}
+/* Accueil : « Membres » en haut à gauche (dans la rangée des outils sur un écran étroit) */
+.membres-accueil{position:absolute;top:20px;left:16px;display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:5px;padding:5px 12px;cursor:pointer;}
+.membres-accueil svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .landing-inner{max-width:1100px;margin:0 auto;text-align:center;}
 .landing-outils{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
 .landing h1{color:var(--fg);font-size:clamp(18px,4vw,26px);font-weight:700;margin-bottom:6px;letter-spacing:-.02em;}
@@ -474,6 +477,7 @@ button,select{font-family:inherit;}
 .verrou,.modal{margin:auto;}
 /* Colonne étroite : l'encadré, presque sans marge, commence sous le bandeau DEV. */
 @container (max-width:860px){.bandeau-dev:not([hidden])~.voile{top:18px;}}
+@container (max-width:760px){.membres-accueil{position:static;}}
 @container (max-width:900px){
   /* Le menu de gauche se superpose au contenu, avec un voile; il est fermé à l'ouverture d'une compétence. */
   .left-nav{position:absolute;top:0;bottom:0;left:0;z-index:60;box-shadow:4px 0 16px rgba(0,0,0,.18);width:min(300px,86cqw);}
@@ -564,7 +568,7 @@ button,select{font-family:inherit;}
   .header-actions input[type=checkbox]{width:20px;height:20px;}
   .header-sous{font-size:12px;}
   .compteur{font-size:12px;}
-  .lang-choice,.ident-accueil{min-height:40px;font-size:13px;}
+  .lang-choice,.ident-accueil,.membres-accueil{min-height:40px;font-size:13px;}
   .bascule .lang-choice{min-height:36px;padding:6px 16px;font-size:13px;}
   .carte-code,.carte-pied{font-size:12px;}
   .nav-label{font-size:12px;}
@@ -639,7 +643,7 @@ const GABARIT=`<div class="racine">
 
 <div id="landing" class="landing">
   <div class="landing-inner">
-    <div class="landing-outils"><div class="lang-choices"><button class="lang-choice" data-lang="fr">Français</button><button class="lang-choice" data-lang="en">English</button></div><button class="ident-btn ident-accueil"></button></div>
+    <div class="landing-outils"><button type="button" class="membres-accueil" id="landing-membres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18.5 14.3c1.8.8 3 2.9 3 5.7"/></svg><span id="landing-membres-l"></span></button><div class="lang-choices"><button class="lang-choice" data-lang="fr">Français</button><button class="lang-choice" data-lang="en">English</button></div><button class="ident-btn ident-accueil"></button></div>
     <h1 id="landing-title"></h1>
     <p id="landing-tag"></p>
     <div class="comp-grille" id="comp-grille"></div>
@@ -886,7 +890,7 @@ function monter(host){
 
   function applyUI(){
     host.lang=lang;
-    $('landing-title').textContent=U('title');$('landing-tag').textContent=U('tagline');
+    $('landing-title').textContent=U('title');$('landing-membres-l').textContent=U('membres');$('landing-tag').textContent=U('tagline');
     $('nav-toggle').title=U('nav');$('links-label').textContent=' '+U('links');$('links-wrap').title=U('linksTip');
     $('theme-btn').title=U('theme');$('nav-label-comp').textContent=U('comp');$('nav-home').textContent=U('home');$('nav-membres').textContent=U('membres');
     [['fermer-prog','fermerProg'],['fermer-ref','fermerRef']].forEach(([id,k])=>{$(id).title=U(k);$(id).setAttribute('aria-label',U(k));});
@@ -1866,13 +1870,13 @@ function monter(host){
   }
   // ---- Membres : regroupés par centre, pour tous. Le titre d'un centre porte, pour les administrateurs, ✎ (renommer)
   // et « Fusionner avec… » (fusionner un doublon). Pas de courriel. ----
-  // « Membres ». Participants : les membres regroupés par centre. Administrateurs : les centres (renommer, retirer un
-  // centre vide), puis un tableau des comptes, avec leur activité et leurs gestes d'administration.
+  // « Membres ». Participants : les membres regroupés par centre. Administrateurs : le tableau des comptes, avec leur
+  // activité et leurs gestes d'administration, puis les centres (renommer, retirer un centre vide).
   function renderMembres(){
     const parNom=(a,b)=>a.nom.localeCompare(b.nom,lang,{sensitivity:'base'});
     const tri=centres.slice().sort(parNom);
     let h=`<h2>${esc(U('membres'))}</h2>`;
-    h+=estAdmin()?centresAdmin(tri)+comptesAdmin(tri,parNom):membresParCentre(tri,parNom);
+    h+=estAdmin()?comptesAdmin(tri,parNom)+centresAdmin(tri):membresParCentre(tri,parNom);
     const P=$('page-membres');
     P.innerHTML=h;
     if(estAdmin()){lierCentres(P);lierMembres(P);}
@@ -2191,11 +2195,15 @@ function monter(host){
   $('nav-toggle').addEventListener('click',()=>{navOpen=!navOpen;$('left-nav').classList.toggle('collapsed',!navOpen);});
   R.querySelector('.main-area').addEventListener('click',()=>{if(navOpen&&etroit()){navOpen=false;$('left-nav').classList.add('collapsed');}});
   $('nav-home').addEventListener('click',goHome);
-  $('nav-membres').addEventListener('click',()=>{
+  // « Membres » : depuis le menu de gauche ou depuis l'accueil.
+  function ouvrirMembres(){
     page='membres';selectedEc=null;centreEdition=null;centreFusion=null;centreErreur=null;membreAction=null;membreErreur=null;
     if(etroit())navOpen=false;
+    vueActive='app';$('landing').hidden=true;$('app').hidden=false;
     render();$('page-membres').scrollTop=0;
-  });
+  }
+  $('nav-membres').addEventListener('click',ouvrirMembres);
+  $('landing-membres').addEventListener('click',ouvrirMembres);
   $('crossref-cb').addEventListener('change',ev=>{crossRef=ev.target.checked;render();});
 
   applyUI();
