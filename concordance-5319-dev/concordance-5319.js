@@ -571,10 +571,11 @@ button,select{font-family:inherit;}
   .header-outils{flex-wrap:wrap;gap:6px 4px;}
   .header-outils button:not(.icon-btn),.header-outils #links-wrap{padding-left:5px;padding-right:5px;}
 }
-/* Clavier ouvert dans la discussion, sur un écran bas : la bande des boutons et le titre de la discussion s'effacent le
-   temps de la saisie, et la discussion se resserre sur la hauteur qui reste, la zone de saisie au-dessus du clavier. */
+/* Clavier ouvert dans la discussion, sur un écran bas : la bande des boutons, la barre de la discussion (sa languette,
+   ‹ C2 et C4 ›) et son titre s'effacent le temps de la saisie, et la discussion se resserre sur la hauteur qui reste,
+   la zone de saisie au-dessus du clavier. */
 @media (max-height:560px){@container (max-width:760px){
-  .racine:has(.fil textarea:focus) .header-outils,.racine:has(.fil textarea:focus) .header-sous,.racine:has(.fil textarea:focus) .fil-titre{display:none;}
+  .racine:has(.fil textarea:focus) .header-outils,.racine:has(.fil textarea:focus) .header-sous,.racine:has(.fil textarea:focus) .fil-barre,.racine:has(.fil textarea:focus) .fil-titre{display:none;}
   .racine:has(.fil textarea:focus) .fil{flex:0 1 auto;min-height:0;}
   .racine:has(.fil textarea:focus) .fil-corps{flex:0 1 auto;min-height:0;}
 }}
