@@ -754,7 +754,7 @@ const GABARIT=`<div class="racine">
     <label id="ident-nouveau-wrap" hidden><span id="ident-l-nouveau"></span><input id="ident-nouveau" maxlength="80" autocomplete="organization"></label>
     <label id="ident-mdp-wrap" hidden><span id="ident-l-mdp"></span><span class="mdp-champ"><input id="ident-mdp" type="password" autocomplete="current-password" maxlength="100"><button type="button" class="oeil" id="ident-mdp-oeil" aria-controls="ident-mdp" aria-pressed="false"></button></span></label>
     <p class="ident-erreur" id="ident-erreur" role="alert" hidden></p>
-    <div class="modal-actions"><button type="button" class="lien" id="ident-deconnexion" hidden></button><button type="button" id="ident-annuler"></button><button type="submit" id="ident-ok"></button></div>
+    <div class="modal-actions"><button type="button" class="lien" id="ident-retour" hidden></button><button type="button" class="lien" id="ident-deconnexion" hidden></button><button type="button" id="ident-annuler"></button><button type="submit" id="ident-ok"></button></div>
   </form>
 </div>
 </div>`;
@@ -774,7 +774,7 @@ const UI={
   
   
   raisonAjout:"Raison de l'ajout",
-  retirerLien:'Retirer',annuler:'Annuler',enregistrer:'Enregistrer',
+  retirerLien:'Retirer',annuler:'Annuler',modifierCourriel:'‹ Modifier mon courriel',enregistrer:'Enregistrer',
   maintenir:'Maintenir',
   adopterAjout:"Adopter",classer:"Ne pas retenir",classerTip:"La proposition reste visible, avec la mention « non retenue ».",
   discussion:'Discussion',discTitre:'Discussion de la compétence {c}',
@@ -809,7 +809,7 @@ const UI={
   
   
   raisonAjout:"Reason for adding",
-  retirerLien:'Remove',annuler:'Cancel',enregistrer:'Save',
+  retirerLien:'Remove',annuler:'Cancel',modifierCourriel:'‹ Change my email',enregistrer:'Save',
   maintenir:'Keep',
   adopterAjout:"Adopt",classer:"Do not retain",classerTip:"The proposal stays visible, marked \"not retained\".",
   discussion:'Discussion',discTitre:'{c} discussion',
@@ -1390,7 +1390,9 @@ function monter(host){
     $('ident-nom-wrap').hidden=!creer;$('ident-nom').required=creer;
     $('ident-courriel-wrap').hidden=profil;$('ident-courriel').required=!profil;
     $('ident-mdp-wrap').hidden=profil||!(besoinMdp||role==='administrateur');
-    $('ident-deconnexion').hidden=!participant;$('ident-deconnexion').textContent=U('deconnecter');
+    // Créer un compte : « ‹ Modifier mon courriel » (L172) ramène à la première étape, pour corriger le courriel.
+    $('ident-retour').hidden=!creer;$('ident-retour').textContent=U('modifierCourriel');
+    $('ident-deconnexion').hidden=!participant||creer;$('ident-deconnexion').textContent=U('deconnecter');
     $('ident-ok').hidden=profil;$('ident-ok').textContent=U(creer?'creer':'connecter');
     $('ident-annuler').textContent=U(profil?'fermer':'annuler');$('ident-annuler').hidden=porte;$('ident-langue').hidden=!porte;
     $('ident-erreur').hidden=true;
@@ -1404,7 +1406,7 @@ function monter(host){
     $('ident-nouveau').value='';
     modeIdentite(profil?'profil':'connecter');
     $('ident-ok').disabled=false;
-    $('ident').hidden=false;(profil?$('ident-annuler'):$('ident-nom')).focus();
+    $('ident').hidden=false;(profil?$('ident-annuler'):$('ident-courriel')).focus();
   }
   function identiteFaite(){
     const suite=apresIdentite;
@@ -1440,6 +1442,7 @@ function monter(host){
   });
   // Corriger son courriel ramène l'écran à sa première étape; « Ajouter un centre… » ouvre le champ du nom du centre.
   $('ident-courriel').addEventListener('input',()=>{if(modeIdent==='creer')modeIdentite('connecter');});
+  $('ident-retour').addEventListener('click',()=>{modeIdentite('connecter');$('ident-courriel').focus();$('ident-courriel').select();});
   $('ident-centre').addEventListener('change',()=>{remplirCentres();if($('ident-centre').value==='+')$('ident-nouveau').focus();});
   // Se déconnecter : le compte est oublié par ce navigateur (le code d'accès, lui, reste).
   $('ident-deconnexion').addEventListener('click',()=>{
